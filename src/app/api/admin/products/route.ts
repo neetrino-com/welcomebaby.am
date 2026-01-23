@@ -117,15 +117,21 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(normalizedProduct, { status: 201 })
   } catch (error) {
+    // Логируем полные детали только на сервере
     console.error('Error creating product:', error)
-    console.error('Error details:', {
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined
-    })
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      })
+    }
+    
+    // В проде не раскрываем детали ошибок клиенту
+    const isDev = process.env.NODE_ENV === 'development'
     return NextResponse.json(
       { 
         error: 'Failed to create product',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        ...(isDev && { details: error instanceof Error ? error.message : 'Unknown error' })
       },
       { status: 500 }
     )

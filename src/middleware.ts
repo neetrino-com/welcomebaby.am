@@ -3,22 +3,21 @@ import { NextResponse } from "next/server"
 
 export default withAuth(
   function middleware(req) {
-    // Временно отключаем проверку роли для тестирования
-    // if (req.nextUrl.pathname.startsWith('/admin')) {
-    //   if (req.nextauth.token?.role !== 'ADMIN') {
-    //     return NextResponse.redirect(new URL('/login', req.url))
-    //   }
-    // }
+    // Проверка роли администратора для админ-панели
+    if (req.nextUrl.pathname.startsWith('/admin')) {
+      if (req.nextauth.token?.role !== 'ADMIN') {
+        return NextResponse.redirect(new URL('/login', req.url))
+      }
+    }
   },
   {
     callbacks: {
       authorized: ({ token, req }) => {
-        // Временно разрешаем доступ ко всем страницам
+        // Требуем авторизацию для админ-панели и профиля
+        if (req.nextUrl.pathname.startsWith('/admin') || req.nextUrl.pathname.startsWith('/profile')) {
+          return !!token
+        }
         return true
-        // if (req.nextUrl.pathname.startsWith('/admin') || req.nextUrl.pathname.startsWith('/profile')) {
-        //   return !!token
-        // }
-        // return true
       },
     },
   }

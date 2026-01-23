@@ -197,13 +197,22 @@ export async function PUT(
 
     return NextResponse.json(normalizedProduct)
   } catch (error) {
+    // Логируем полные детали только на сервере
     console.error('Error updating product:', error)
-    console.error('Error details:', {
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined
-    })
+    const isDev = process.env.NODE_ENV === 'development'
+    if (isDev) {
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      })
+    }
+    
+    // В проде не раскрываем детали ошибок клиенту
     return NextResponse.json(
-      { error: 'Failed to update product', details: error instanceof Error ? error.message : 'Unknown error' },
+      { 
+        error: 'Failed to update product',
+        ...(isDev && { details: error instanceof Error ? error.message : 'Unknown error' })
+      },
       { status: 500 }
     )
   }

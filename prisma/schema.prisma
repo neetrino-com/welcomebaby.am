@@ -8,16 +8,16 @@ datasource db {
 }
 
 model User {
-  id        String    @id @default(cuid())
-  email     String    @unique
+  id        String     @id @default(cuid())
+  email     String     @unique
   name      String?
   phone     String?
   address   String?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
   deletedAt DateTime?
   password  String
-  role      UserRole  @default(USER)
+  role      UserRole   @default(USER)
   orders    Order[]
   wishlist  Wishlist[]
 
@@ -25,16 +25,16 @@ model User {
 }
 
 model Category {
-  id              String    @id @default(cuid())
-  name            String    @unique
-  description     String?
-  image           String?   // Путь к изображению категории
-  sortOrder       Int       @default(0) // Порядок сортировки
-  showInMainPage  Boolean   @default(false) // Показывать на главной странице
-  isActive        Boolean   @default(true)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  products        Product[]
+  id             String    @id @default(cuid())
+  name           String    @unique
+  description    String?
+  image          String?
+  sortOrder      Int       @default(0)
+  showInMainPage Boolean   @default(false)
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  products       Product[]
 
   @@map("categories")
 }
@@ -44,19 +44,19 @@ model Product {
   name        String
   description String
   price       Float
-  salePrice   Float?        // Цена со скидкой (опционально)
-  image       String        // Главное изображение
-  images      String?       // JSON массив дополнительных изображений
+  salePrice   Float?
+  image       String
   categoryId  String
   ingredients String
   isAvailable Boolean       @default(true)
-  stock       Int           @default(0)  // Количество в наличии
+  stock       Int           @default(0)
   status      ProductStatus @default(REGULAR)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
+  images      String?
   orderItems  OrderItem[]
-  wishlist    Wishlist[]
   category    Category      @relation(fields: [categoryId], references: [id])
+  wishlist    Wishlist[]
 
   @@map("products")
 }
@@ -86,8 +86,8 @@ model OrderItem {
   productId String
   quantity  Int
   price     Float
-  product   Product @relation(fields: [productId], references: [id])
   order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id])
 
   @@map("order_items")
 }
@@ -98,23 +98,22 @@ model Wishlist {
   productId String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, productId])
   @@map("wishlist")
 }
 
-
 model DeliveryType {
-  id          String   @id @default(cuid())
-  name        String   @unique
+  id           String   @id @default(cuid())
+  name         String   @unique
   deliveryTime String
-  description String
-  price       Float
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  description  String
+  price        Float
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@map("delivery_types")
 }

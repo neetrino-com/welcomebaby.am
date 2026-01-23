@@ -39,9 +39,42 @@ const nextConfig: NextConfig = {
   serverExternalPackages: [],
   // Компрессия
   compress: true,
-  // Кэширование
+  // Security Headers и кэширование
   async headers() {
+    const securityHeaders = [
+      {
+        key: 'X-Frame-Options',
+        value: 'SAMEORIGIN',
+      },
+      {
+        key: 'X-Content-Type-Options',
+        value: 'nosniff',
+      },
+      {
+        key: 'Referrer-Policy',
+        value: 'strict-origin-when-cross-origin',
+      },
+      {
+        key: 'X-XSS-Protection',
+        value: '1; mode=block',
+      },
+    ]
+
+    // HSTS только для HTTPS (в проде)
+    if (process.env.NODE_ENV === 'production') {
+      securityHeaders.push({
+        key: 'Strict-Transport-Security',
+        value: 'max-age=31536000; includeSubDomains',
+      })
+    }
+
     return [
+      // Security headers для всех маршрутов
+      {
+        source: '/:path*',
+        headers: securityHeaders,
+      },
+      // Кэширование для API продуктов
       {
         source: '/api/products/:path*',
         headers: [
@@ -51,6 +84,7 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      // Кэширование для изображений
       {
         source: '/images/:path*',
         headers: [

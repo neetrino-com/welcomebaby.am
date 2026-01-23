@@ -3,12 +3,19 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 
-// Устанавливаем переменные окружения для NextAuth
+// Проверяем обязательные переменные окружения
 if (!process.env.NEXTAUTH_URL) {
-  process.env.NEXTAUTH_URL = 'http://localhost:3000'
+  // В development используем localhost, в production должен быть установлен
+  if (process.env.NODE_ENV === 'development') {
+    process.env.NEXTAUTH_URL = 'http://localhost:3000'
+  } else {
+    throw new Error('NEXTAUTH_URL must be set in environment variables for production')
+  }
 }
+
+// NEXTAUTH_SECRET обязателен для безопасности
 if (!process.env.NEXTAUTH_SECRET) {
-  process.env.NEXTAUTH_SECRET = 'your-secret-key-here-change-in-production'
+  throw new Error('NEXTAUTH_SECRET must be set in environment variables. Generate with: openssl rand -base64 32')
 }
 
 export const authOptions = {
@@ -61,6 +68,17 @@ export const authOptions = {
     strategy: "jwt" as const,
     maxAge: 30 * 24 * 60 * 60, // 30 дней
     updateAge: 24 * 60 * 60, // 24 часа
+  },
+  cookies: {
+    sessionToken: {
+      name: `${process.env.NODE_ENV === 'production' ? '__Secure-' : ''}next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production', // HTTPS only в проде
+      },
+    },
   },
   callbacks: {
     async jwt({ token, user }) {

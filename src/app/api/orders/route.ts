@@ -52,14 +52,15 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions)
     const { name, phone, address, paymentMethod, notes, items, total, deliveryTime } = await request.json()
 
-    console.log('Creating order with data:', { 
+    // Логируем только метаданные, без персональных данных (PII)
+    console.log('Creating order:', { 
       hasSession: !!session, 
       userId: session?.user?.id, 
-      name, 
-      phone, 
-      address, 
       itemsCount: items?.length,
       total,
+      paymentMethod,
+      deliveryTime,
+      // НЕ логируем: name, phone, address (PII)
       items: items?.map((item: any) => ({
         productId: item.productId,
         quantity: item.quantity,
@@ -127,9 +128,11 @@ export async function POST(request: NextRequest) {
     console.log('Order created successfully:', order.id)
     return NextResponse.json(order, { status: 201 })
   } catch (error) {
+    // Логируем полные детали только на сервере
     console.error('Create order API error:', error)
     
-    if (error instanceof Error) {
+    const isDev = process.env.NODE_ENV === 'development'
+    if (isDev && error instanceof Error) {
       console.error('Error details:', {
         name: error.name,
         message: error.message,
@@ -137,8 +140,12 @@ export async function POST(request: NextRequest) {
       })
     }
     
+    // В проде не раскрываем детали ошибок клиенту
     return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
+      { 
+        error: 'Internal server error',
+        ...(isDev && { details: error instanceof Error ? error.message : 'Unknown error' })
+      },
       { status: 500 }
     )
   }

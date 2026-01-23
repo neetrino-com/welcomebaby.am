@@ -20,13 +20,40 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 })
     }
 
+    // Проверяем размер файла (максимум 10MB для общих файлов)
+    if (file.size > 10 * 1024 * 1024) {
+      return NextResponse.json(
+        { error: 'File size must be less than 10MB' },
+        { status: 400 }
+      )
+    }
+
+    // Проверяем минимальный размер
+    if (file.size === 0) {
+      return NextResponse.json(
+        { error: 'File is empty' },
+        { status: 400 }
+      )
+    }
+
+    // Проверяем расширение файла
+    const allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'pdf', 'doc', 'docx']
+    const extension = file.name.split('.').pop()?.toLowerCase()
+    
+    if (!extension || !allowedExtensions.includes(extension)) {
+      return NextResponse.json(
+        { error: `File extension not allowed. Allowed: ${allowedExtensions.join(', ')}` },
+        { status: 400 }
+      )
+    }
+
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
-    // Создаем уникальное имя файла
+    // Создаем уникальное имя файла (безопасное, без оригинального имени)
     const timestamp = Date.now()
-    const extension = file.name.split('.').pop()
-    const filename = `${timestamp}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`
+    const randomString = Math.random().toString(36).substring(2, 10)
+    const filename = `${timestamp}-${randomString}.${extension}`
     
     // Путь к папке public
     const uploadDir = join(process.cwd(), 'public', folder)
