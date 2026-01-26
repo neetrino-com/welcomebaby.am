@@ -36,6 +36,7 @@ export default async function OptimizedProductPage({
           name: true,
           description: true,
           price: true,
+          salePrice: true,
           categoryId: true,
           category: {
             select: {
@@ -48,7 +49,10 @@ export default async function OptimizedProductPage({
           ingredients: true,
           isAvailable: true,
           status: true,
-          createdAt: true
+          createdAt: true,
+          updatedAt: true,
+          stock: true,
+          images: true
         }
       }),
       
@@ -63,6 +67,7 @@ export default async function OptimizedProductPage({
           name: true,
           description: true,
           price: true,
+          salePrice: true,
           categoryId: true,
           category: {
             select: {
@@ -75,7 +80,10 @@ export default async function OptimizedProductPage({
           ingredients: true,
           isAvailable: true,
           status: true,
-          createdAt: true
+          createdAt: true,
+          updatedAt: true,
+          stock: true,
+          images: true
         },
         orderBy: { createdAt: 'desc' },
         take: 4
@@ -125,9 +133,9 @@ export default async function OptimizedProductPage({
                         {/* 3D Shadow Layer */}
                         <div 
                           className="absolute inset-0 rounded-3xl transform translate-y-2 translate-x-1 group-hover:translate-y-3 group-hover:translate-x-2 transition-all duration-700"
-                          style={{ backgroundColor: 'rgba(255, 221, 132, 0.1)' }}
-                          style={{
-                            filter: 'none',
+                          style={{ 
+                            backgroundColor: 'rgba(255, 221, 132, 0.1)',
+                            filter: 'none'
                           }}
                         />
                         
@@ -142,8 +150,7 @@ export default async function OptimizedProductPage({
                           style={{
                             filter: 'none',
                             transform: 'perspective(1000px) rotateX(5deg) rotateY(-2deg)',
-                            imageRendering: 'crisp-edges',
-                            imageRendering: '-webkit-optimize-contrast',
+                            imageRendering: 'crisp-edges' as const,
                           }}
                           onError={(e) => {
                             e.currentTarget.style.display = 'none';

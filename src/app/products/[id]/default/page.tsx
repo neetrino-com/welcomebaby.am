@@ -218,7 +218,7 @@ export default function DefaultProductPage({
                       ՆՈՐ
                     </span>
                   )}
-                  {product.status === 'SALE' && (
+                  {product.salePrice && product.salePrice < product.price && (
                     <span className="text-white px-3 py-1 rounded-full text-xs font-bold" style={{ backgroundColor: '#002c45' }}>
                       ԶԵՂՉ
                     </span>
@@ -263,7 +263,7 @@ export default function DefaultProductPage({
           <div className="space-y-6">
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-sm text-gray-500">{product.category?.name}</span>
+                <span className="text-sm text-gray-500">{(product as Product & { category?: { name: string } }).category?.name || 'Без категории'}</span>
               </div>
               
               <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">{product.name}</h1>
