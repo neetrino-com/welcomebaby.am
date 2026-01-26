@@ -1,14 +1,21 @@
 'use client'
 
 import { useSession } from 'next-auth/react'
+import { useEffect, useState } from 'react'
 import MobileHeader from './MobileHeader'
 import DesktopHeader from './DesktopHeader'
 
 export default function Header() {
+  const [mounted, setMounted] = useState(false)
   const { data: session, status } = useSession()
   
-  // Показываем заглушку пока сессия загружается
-  if (status === 'loading') {
+  // Убеждаемся, что компонент смонтирован на клиенте
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+  
+  // Показываем заглушку пока компонент не смонтирован или сессия загружается
+  if (!mounted || status === 'loading') {
     return (
       <>
         <div className="lg:hidden">
@@ -22,7 +29,7 @@ export default function Header() {
   }
   
   // Принудительное обновление Header при изменении сессии
-  const headerKey = session ? `authenticated-${session.user?.id}` : 'unauthenticated'
+  const headerKey = session?.user?.id ? `authenticated-${session.user.id}` : 'unauthenticated'
 
   return (
     <>

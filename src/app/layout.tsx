@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { Suspense } from "react";
 import "./globals.css";
 import ClientProviders from "@/components/ClientProviders";
 import MobileBottomNav from "@/components/MobileBottomNav";
@@ -38,7 +39,14 @@ export default function RootLayout({
       <body className={`${inter.variable} font-sans antialiased overflow-x-hidden bg-white`} suppressHydrationWarning>
         <ServiceWorkerProvider />
         <ClientProviders>
-          <Header />
+          <Suspense fallback={
+            <>
+              <div className="lg:hidden h-20 bg-[#002c45]" />
+              <div className="hidden lg:block h-28 bg-[#002c45]" />
+            </>
+          }>
+            <Header />
+          </Suspense>
           <PullToRefresh>
             {children}
           </PullToRefresh>
