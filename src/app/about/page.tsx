@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { Clock, Users, Heart, Award, ChefHat, Truck, Star, CheckCircle } from 'lucide-react'
+import { Clock, Users, Heart, Award, ChefHat } from 'lucide-react'
 import { AnimatedCounter } from "@/components/AnimatedCounter"
 import Footer from "@/components/Footer"
 

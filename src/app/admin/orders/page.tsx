@@ -5,9 +5,6 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Order, OrderItem, User } from '@/types'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
 import { 
   Search, 
   Filter, 
@@ -18,7 +15,6 @@ import {
   Calendar,
   User as UserIcon,
   Phone,
-  MapPin,
   CreditCard,
   Package,
   Clock,
@@ -28,9 +24,7 @@ import {
   Truck,
   CheckSquare,
   ShoppingCart,
-  TrendingUp,
   DollarSign,
-  Plus,
   Download,
   Printer
 } from 'lucide-react'

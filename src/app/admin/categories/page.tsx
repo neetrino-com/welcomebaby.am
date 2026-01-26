@@ -4,13 +4,11 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { 
   Plus, 
   Edit, 
   Trash2, 
-  Eye, 
-  EyeOff, 
-  Upload,
   ArrowLeft,
   Search,
   Filter
@@ -247,10 +245,12 @@ export default function CategoriesPage() {
               {/* Изображение категории */}
               <div className="relative w-full h-32 mb-4 rounded-lg overflow-hidden">
                 {category.image ? (
-                  <img
+                  <Image
                     src={category.image}
                     alt={category.name}
-                    className="w-full h-full object-cover"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 50vw"
                   />
                 ) : (
                   <div className="w-full h-full bg-white/20 flex items-center justify-center text-4xl">

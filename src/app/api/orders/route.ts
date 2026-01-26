@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { PrismaClient } from '@prisma/client'
+import { logger } from '@/lib/logger'
 
 const prisma = new PrismaClient()
 
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(orders)
   } catch (error) {
-    console.error('Orders API error:', error)
+    logger.error('Orders API error', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -53,7 +54,7 @@ export async function POST(request: NextRequest) {
     const { name, phone, address, paymentMethod, notes, items, total, deliveryTime } = await request.json()
 
     // Логируем только метаданные, без персональных данных (PII)
-    console.log('Creating order:', { 
+    logger.debug('Creating order:', { 
       hasSession: !!session, 
       userId: session?.user?.id, 
       itemsCount: items?.length,
@@ -76,14 +77,14 @@ export async function POST(request: NextRequest) {
         select: { id: true, name: true }
       })
       
-      console.log('Existing products:', existingProducts)
+      logger.debug('Existing products:', existingProducts)
       
       const missingProducts = productIds.filter((id: string) => 
         !existingProducts.find(p => p.id === id)
       )
       
       if (missingProducts.length > 0) {
-        console.error('Missing products:', missingProducts)
+        logger.error('Missing products:', missingProducts)
         return NextResponse.json(
           { error: `Products not found: ${missingProducts.join(', ')}` },
           { status: 400 }
@@ -125,7 +126,7 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    console.log('Order created successfully:', order.id)
+    logger.info('Order created successfully:', order.id)
     return NextResponse.json(order, { status: 201 })
   } catch (error) {
     // Логируем полные детали только на сервере
