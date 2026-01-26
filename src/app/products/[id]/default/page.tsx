@@ -11,6 +11,7 @@ import ProductCard from '@/components/ProductCard'
 import ProductCarousel from '@/components/ProductCarousel'
 import { useCart } from '@/hooks/useCart'
 import { formatPrice } from '@/utils/priceUtils'
+import { isValidImagePath } from '@/utils/imageUtils'
 
 export default function DefaultProductPage({
   params
@@ -191,7 +192,7 @@ export default function DefaultProductPage({
           <div className="space-y-4">
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden group relative">
               <div className="relative h-80 lg:h-96">
-                {product.image && product.image !== 'no-image' ? (
+                {product.image && product.image !== 'no-image' && isValidImagePath(product.image) ? (
                   <Image
                     src={product.image}
                     alt={product.name}
@@ -241,7 +242,7 @@ export default function DefaultProductPage({
             <div className="grid grid-cols-4 gap-2">
               {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
-                  {product.image && product.image !== 'no-image' ? (
+                  {product.image && product.image !== 'no-image' && isValidImagePath(product.image) ? (
                     <Image
                       src={product.image}
                       alt={`${product.name} ${i}`}

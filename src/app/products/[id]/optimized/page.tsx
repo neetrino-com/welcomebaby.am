@@ -13,6 +13,7 @@ import { useCart } from '@/hooks/useCart'
 import { prisma } from '@/lib/prisma'
 import { parseIngredients, hasIngredients } from '@/utils/ingredients'
 import { formatPrice } from '@/utils/priceUtils'
+import { isValidImagePath } from '@/utils/imageUtils'
 
 // Server Component - данные загружаются на сервере
 export default async function OptimizedProductPage({
@@ -126,7 +127,7 @@ export default async function OptimizedProductPage({
               <div className="bg-white rounded-2xl shadow-lg overflow-visible group relative">
                 <div className="relative h-96 overflow-visible">
                   {/* 3D Product Container */}
-                  {product.image && product.image !== 'no-image' ? (
+                  {product.image && product.image !== 'no-image' && isValidImagePath(product.image) ? (
                     <div className="relative w-full h-full">
                       {/* 3D Product Image with floating effect */}
                       <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 w-[calc(100%+1rem)] h-[calc(100%+1rem)]">
