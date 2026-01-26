@@ -4,6 +4,8 @@
  */
 
 import { put, del, list } from '@vercel/blob'
+import { writeFile, mkdir } from 'fs/promises'
+import { join } from 'path'
 
 export interface BlobUploadResult {
   url: string
@@ -35,9 +37,31 @@ export async function uploadFile(
     }
   }
 
-  // Fallback для локальной разработки (не используется, но оставлено для совместимости)
-  // В production всегда должен быть BLOB_READ_WRITE_TOKEN
-  throw new Error('BLOB_READ_WRITE_TOKEN не настроен. Настройте Vercel Blob Storage.')
+  // Fallback для локальной разработки - сохраняем в public/images
+  const bytes = await file.arrayBuffer()
+  const buffer = Buffer.from(bytes)
+  
+  // Определяем путь для локального сохранения
+  const uploadDir = join(process.cwd(), 'public', 'images')
+  
+  // Создаем папку если не существует
+  try {
+    await mkdir(uploadDir, { recursive: true })
+  } catch (error) {
+    // Папка уже существует
+  }
+
+  // Сохраняем файл локально
+  const localPath = join(uploadDir, fileName.split('/').pop() || fileName)
+  await writeFile(localPath, buffer)
+
+  // Возвращаем относительный путь
+  const relativePath = `/images/${fileName.split('/').pop() || fileName}`
+  
+  return {
+    url: relativePath,
+    path: relativePath,
+  }
 }
 
 /**
