@@ -143,7 +143,7 @@ export default function AdminProducts() {
       <div className="lg:hidden h-20"></div>
       <div className="hidden lg:block h-28"></div>
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-[98%] mx-auto px-2 sm:px-4 lg:px-6 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-4">
@@ -257,31 +257,31 @@ export default function AdminProducts() {
           
           {/* Таблица товаров */}
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[1200px]">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                     Изображение
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[250px]">
                     Название
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                     Категория
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                     Цена
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                     Статус
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                     Наличие
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                     Остаток
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
                     Действия
                   </th>
                 </tr>
@@ -292,7 +292,7 @@ export default function AdminProducts() {
                   return (
                     <tr key={product.id} className="hover:bg-gray-50 transition-colors">
                       {/* Изображение */}
-                      <td className="px-4 py-3 whitespace-nowrap">
+                      <td className="px-3 py-2 whitespace-nowrap">
                         <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
                           {product.image && product.image !== 'no-image' ? (
                             <img 
@@ -307,9 +307,9 @@ export default function AdminProducts() {
                       </td>
                       
                       {/* Название */}
-                      <td className="px-4 py-3">
-                        <div className="max-w-xs">
-                          <div className="text-sm font-semibold text-gray-900 truncate">
+                      <td className="px-4 py-2">
+                        <div className="max-w-md">
+                          <div className="text-sm font-semibold text-gray-900">
                             {product.name}
                           </div>
                           <div className="text-xs text-gray-500 line-clamp-2 mt-1">
@@ -319,14 +319,14 @@ export default function AdminProducts() {
                       </td>
                       
                       {/* Категория */}
-                      <td className="px-4 py-3 whitespace-nowrap">
+                      <td className="px-3 py-2 whitespace-nowrap">
                         <span className="text-sm text-gray-900">
                           {(product as Product & { category?: { name: string } }).category?.name || product.categoryId || 'Без категории'}
                         </span>
                       </td>
                       
                       {/* Цена */}
-                      <td className="px-4 py-3 whitespace-nowrap">
+                      <td className="px-3 py-2 whitespace-nowrap">
                         <div className="text-sm">
                           {product.salePrice ? (
                             <div className="flex flex-col gap-1">
@@ -345,7 +345,7 @@ export default function AdminProducts() {
                       </td>
                       
                       {/* Статус */}
-                      <td className="px-4 py-3 whitespace-nowrap">
+                      <td className="px-3 py-2 whitespace-nowrap">
                         {statusBadge ? (
                           <span className={`px-2 py-1 rounded-full text-xs font-semibold border ${statusBadge.className}`}>
                             {statusBadge.text}
@@ -356,7 +356,7 @@ export default function AdminProducts() {
                       </td>
                       
                       {/* Наличие */}
-                      <td className="px-4 py-3 whitespace-nowrap">
+                      <td className="px-3 py-2 whitespace-nowrap">
                         <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                           product.isAvailable 
                             ? 'bg-green-100 text-green-800' 
@@ -367,7 +367,7 @@ export default function AdminProducts() {
                       </td>
                       
                       {/* Остаток */}
-                      <td className="px-4 py-3 whitespace-nowrap">
+                      <td className="px-3 py-2 whitespace-nowrap">
                         <span className={`text-sm font-semibold ${
                           (product.stock || 0) > 0 ? 'text-gray-900' : 'text-red-600'
                         }`}>
@@ -376,7 +376,7 @@ export default function AdminProducts() {
                       </td>
                       
                       {/* Действия */}
-                      <td className="px-4 py-3 whitespace-nowrap text-center">
+                      <td className="px-3 py-2 whitespace-nowrap text-center">
                         <div className="flex items-center justify-center space-x-2">
                           <Link
                             href={`/admin/products/${product.id}/edit`}
