@@ -62,3 +62,6 @@ jspm_packages/
 *.msi
 *.dmg
 *.pkgtsconfig.tsbuildinfo
+
+# Example folder
+example/
