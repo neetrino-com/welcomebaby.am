@@ -136,14 +136,19 @@ self.addEventListener('fetch', (event) => {
             !request.url.includes('_next/static/media/') &&
             !request.url.startsWith('chrome-extension:') &&
             !request.url.startsWith('moz-extension:') &&
-            !request.url.startsWith('safari-extension:')) {
+            !request.url.startsWith('safari-extension:') &&
+            request.url.startsWith('http')) {
           try {
             const responseClone = networkResponse.clone()
             const cache = await caches.open(CACHE_NAME)
-            await cache.put(request, responseClone)
+            // Дополнительная проверка перед кэшированием
+            const url = new URL(request.url)
+            if (url.protocol === 'http:' || url.protocol === 'https:') {
+              await cache.put(request, responseClone)
+            }
           } catch (cacheError) {
             // Игнорируем ошибки кэширования (например, для chrome-extension)
-            console.warn('Service Worker: Cache put failed (ignored):', cacheError)
+            // Не логируем, чтобы не засорять консоль
           }
         }
         

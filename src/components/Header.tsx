@@ -7,15 +7,35 @@ import DesktopHeader from './DesktopHeader'
 
 export default function Header() {
   const [mounted, setMounted] = useState(false)
-  const { data: session, status } = useSession()
   
   // Убеждаемся, что компонент смонтирован на клиенте
   useEffect(() => {
     setMounted(true)
   }, [])
   
-  // Показываем заглушку пока компонент не смонтирован или сессия загружается
-  if (!mounted || status === 'loading') {
+  // Показываем заглушку пока компонент не смонтирован
+  if (!mounted) {
+    return (
+      <>
+        <div className="lg:hidden">
+          <div className="h-20 bg-[#002c45]" />
+        </div>
+        <div className="hidden lg:block">
+          <div className="h-28 bg-[#002c45]" />
+        </div>
+      </>
+    )
+  }
+  
+  // Используем useSession только после монтирования
+  return <HeaderContent />
+}
+
+function HeaderContent() {
+  const { data: session, status } = useSession()
+  
+  // Показываем заглушку пока сессия загружается
+  if (status === 'loading') {
     return (
       <>
         <div className="lg:hidden">
