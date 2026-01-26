@@ -244,19 +244,25 @@ export default function CategoriesPage() {
             >
               {/* Изображение категории */}
               <div className="relative w-full h-32 mb-4 rounded-lg overflow-hidden">
-                {category.image ? (
-                  <Image
+                {category.image && !category.image.startsWith('/images/') ? (
+                  // Используем обычный img для blob URLs (Next.js Image не работает с query параметрами в blob URLs)
+                  <img
                     src={category.image}
                     alt={category.name}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, 50vw"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none'
+                      const placeholder = e.currentTarget.nextElementSibling as HTMLElement
+                      if (placeholder) placeholder.style.display = 'flex'
+                    }}
                   />
-                ) : (
-                  <div className="w-full h-full bg-white/20 flex items-center justify-center text-4xl">
-                    🎯
-                  </div>
-                )}
+                ) : null}
+                <div 
+                  className="w-full h-full bg-white/20 flex items-center justify-center text-4xl"
+                  style={{ display: (category.image && !category.image.startsWith('/images/')) ? 'none' : 'flex' }}
+                >
+                  🎯
+                </div>
               </div>
 
               {/* Информация о категории */}

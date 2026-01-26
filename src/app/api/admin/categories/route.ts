@@ -46,17 +46,34 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { name, description, image, sortOrder, showInMainPage, isActive } = body
     
-    // Нормализуем URL изображения и добавим cache-busting
+    // Нормализуем URL изображения
+    // Blob URLs сохраняем как есть, локальные пути больше не используем
     const normalizedImage = ((): string | null => {
       if (!image || typeof image !== 'string') return null
       const trimmed = image.trim()
       if (!trimmed) return null
+      
+      // Игнорируем blob: и data: URLs (временные)
       if (/^(blob:|data:)/i.test(trimmed)) return null
-      const withoutOrigin = trimmed.replace(/^https?:\/\/[^/]+/, '')
-      const basePath = withoutOrigin.startsWith('/') ? withoutOrigin : `/${withoutOrigin}`
-      const stamp = Date.now()
-      const sep = basePath.includes('?') ? '&' : '?'
-      return `${basePath}${sep}v=${stamp}`
+      
+      // Если это полный URL от blob storage, сохраняем как есть
+      if (trimmed.startsWith('https://') && trimmed.includes('public.blob.vercel-storage.com')) {
+        return trimmed
+      }
+      
+      // Если это полный HTTP URL, сохраняем как есть
+      if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+        return trimmed
+      }
+      
+      // Старые локальные пути /images/ больше не поддерживаются
+      // Возвращаем null, чтобы пользователь загрузил изображение в blob
+      if (trimmed.startsWith('/images/')) {
+        return null
+      }
+      
+      // Любые другие пути считаем невалидными
+      return null
     })()
 
     // Валидация

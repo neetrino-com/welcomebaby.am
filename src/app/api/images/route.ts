@@ -1,35 +1,32 @@
 import { NextResponse } from 'next/server'
-import { readdir } from 'fs/promises'
-import { join } from 'path'
+import { listFiles } from '@/lib/blob'
 
 export async function GET() {
   try {
-    const imagesDir = join(process.cwd(), 'public', 'images')
-    
-    // Получаем список всех файлов в папке images
-    // Эта папка используется только для статических изображений (логотипы, дефолтные изображения категорий)
-    // Новые загруженные изображения хранятся в Vercel Blob Storage
-    const files = await readdir(imagesDir, { withFileTypes: true })
+    // Получаем список всех изображений из Vercel Blob Storage
+    // Все изображения теперь хранятся в blob, включая изображения категорий
+    const blobs = await listFiles('images/')
     
     // Фильтруем только изображения
-    const imageFiles = files
-      .filter(file => {
-        if (!file.isFile()) return false
-        const ext = file.name.toLowerCase().split('.').pop()
-        return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '')
+    const imageFiles = blobs
+      .filter(blob => {
+        const ext = blob.pathname.toLowerCase().split('.').pop()
+        return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext || '')
       })
-      .map(file => ({
-        name: file.name,
-        path: `/images/${file.name}`,
-        category: getImageCategory(file.name)
-      }))
+      .map(blob => {
+        const fileName = blob.pathname.split('/').pop() || blob.pathname
+        return {
+          name: fileName,
+          path: blob.url, // Используем полный URL из blob
+          category: getImageCategory(fileName)
+        }
+      })
       .sort((a, b) => a.name.localeCompare(b.name))
 
     return NextResponse.json(imageFiles)
   } catch (error) {
-    // Если папка не существует или произошла ошибка, возвращаем пустой массив
-    // Это нормально, так как новые изображения хранятся в Blob Storage
-    console.error('Error reading images directory:', error)
+    // Если произошла ошибка, возвращаем пустой массив
+    console.error('Error reading images from blob storage:', error)
     return NextResponse.json([])
   }
 }
