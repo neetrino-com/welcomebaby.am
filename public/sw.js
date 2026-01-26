@@ -183,8 +183,8 @@ self.addEventListener('push', (event) => {
   
   const options = {
     body: event.data ? event.data.text() : 'Новое уведомление от WelcomeBaby',
-    icon: '/images/logo.png',
-    badge: '/images/logo.png',
+    icon: '/logo.png',
+    badge: '/logo.png',
     vibrate: [100, 50, 100],
     data: {
       dateOfArrival: Date.now(),
@@ -194,12 +194,12 @@ self.addEventListener('push', (event) => {
       {
         action: 'explore',
         title: 'Посмотреть',
-        icon: '/images/logo.png'
+        icon: '/logo.png'
       },
       {
         action: 'close',
         title: 'Закрыть',
-        icon: '/images/logo.png'
+        icon: '/logo.png'
       }
     ]
   }

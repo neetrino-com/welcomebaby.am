@@ -106,7 +106,7 @@ export default function DesktopHeader() {
           {/* Logo */}
           <Link href="/" className="hover:opacity-80 transition-opacity">
             <Image 
-              src={settings.logo || "/images/logo.png"} 
+              src={settings.logo || "/logo.png"} 
               alt={settings.siteName || "WelcomeBaby Logo"} 
               width={333}
               height={125}

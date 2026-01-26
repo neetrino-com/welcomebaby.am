@@ -13,6 +13,7 @@ import { AnimatedCounter } from "@/components/AnimatedCounter";
 import TwinklingStars from "@/components/TwinklingStars";
 // getFallbackImage больше не используется - используем null для отсутствующих изображений
 import { formatPrice } from "@/utils/priceUtils";
+import { isValidImagePath } from "@/utils/imageUtils";
 
 import Footer from '@/components/Footer'
 
@@ -191,7 +192,7 @@ export default function Home() {
                 <div className="relative bg-white/25 backdrop-blur-xl rounded-2xl p-3 text-center border border-white/30 shadow-2xl hover:shadow-3xl transition-all duration-300 group">
                   {/* Product Image Container */}
                   <div className="relative w-28 h-28 mx-auto mb-2 rounded-xl flex items-center justify-center overflow-hidden bg-gray-200">
-                    {bannerProduct.image ? (
+                    {bannerProduct.image && bannerProduct.image !== 'no-image' && isValidImagePath(bannerProduct.image) ? (
                       <img 
                         src={bannerProduct.image} 
                         alt={bannerProduct.name}
@@ -207,7 +208,7 @@ export default function Home() {
                     ) : null}
                     <div 
                       className="w-full h-full flex items-center justify-center text-4xl"
-                      style={{ display: bannerProduct.image ? 'none' : 'flex' }}
+                      style={{ display: (bannerProduct.image && bannerProduct.image !== 'no-image' && isValidImagePath(bannerProduct.image)) ? 'none' : 'flex' }}
                     >
                       🥟
                     </div>
@@ -264,7 +265,7 @@ export default function Home() {
                 <div className="relative bg-white/25 backdrop-blur-xl rounded-3xl p-4 text-center border border-white/30 shadow-2xl hover:shadow-3xl transition-all duration-300 group">
                   {/* Product Image Container */}
                   <div className="relative w-36 h-36 mx-auto mb-3 rounded-2xl flex items-center justify-center overflow-hidden bg-gray-200">
-                    {bannerProduct.image ? (
+                    {bannerProduct.image && bannerProduct.image !== 'no-image' && isValidImagePath(bannerProduct.image) ? (
                       <img 
                         src={bannerProduct.image} 
                         alt={bannerProduct.name}
@@ -280,7 +281,7 @@ export default function Home() {
                     ) : null}
                     <div 
                       className="w-full h-full flex items-center justify-center text-5xl"
-                      style={{ display: bannerProduct.image ? 'none' : 'flex' }}
+                      style={{ display: (bannerProduct.image && bannerProduct.image !== 'no-image' && isValidImagePath(bannerProduct.image)) ? 'none' : 'flex' }}
                     >
                       🥟
                     </div>
@@ -376,7 +377,7 @@ export default function Home() {
                   <>
                     {/* Product Image - узкая карточка для вертикальных изображений */}
                     <div className="relative w-full h-[400px] overflow-hidden flex items-center justify-center" style={{ backgroundColor: '#f5f5f5' }}>
-                      {bannerProduct.image ? (
+                      {bannerProduct.image && bannerProduct.image !== 'no-image' && isValidImagePath(bannerProduct.image) ? (
                         <img 
                           src={bannerProduct.image} 
                           alt={bannerProduct.name}
@@ -391,7 +392,7 @@ export default function Home() {
                           }}
                         />
                       ) : null}
-                      <div className="absolute inset-0 flex items-center justify-center text-6xl opacity-50" style={{ display: bannerProduct.image ? 'none' : 'flex' }}>
+                      <div className="absolute inset-0 flex items-center justify-center text-6xl opacity-50" style={{ display: (bannerProduct.image && bannerProduct.image !== 'no-image' && isValidImagePath(bannerProduct.image)) ? 'none' : 'flex' }}>
                         🥟
                       </div>
                     </div>

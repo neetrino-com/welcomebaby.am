@@ -10,6 +10,11 @@
 export function isValidImagePath(imagePath: string | null | undefined): boolean {
   if (!imagePath) return false;
   
+  // Игнорируем placeholder значения
+  if (imagePath === 'no-image' || imagePath === '/images/nophoto.jpg') {
+    return false;
+  }
+  
   // Разрешаем локальные пути /images/...
   if (imagePath.startsWith('/images/')) {
     const validExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.avif', '.gif'];

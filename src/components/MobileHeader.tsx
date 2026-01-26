@@ -110,7 +110,7 @@ export default function MobileHeader() {
           <div className="absolute left-1/2 transform -translate-x-1/2">
             <Link href="/" className="hover:opacity-80 transition-all duration-300 hover:scale-105">
               <Image 
-                src={settings.logo || "/images/logo.png"} 
+                src={settings.logo || "/logo.png"} 
                 alt={settings.siteName || "WelcomeBaby Logo"} 
                 width={120} 
                 height={36}

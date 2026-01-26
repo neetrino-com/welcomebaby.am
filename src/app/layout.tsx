@@ -20,10 +20,10 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: '/logo.ico', sizes: 'any' },
-      { url: '/images/logo.png', type: 'image/png' },
+      { url: '/logo.png', type: 'image/png' },
     ],
     shortcut: '/logo.ico',
-    apple: '/images/logo.png',
+    apple: '/logo.png',
   },
   manifest: '/manifest.json',
 };

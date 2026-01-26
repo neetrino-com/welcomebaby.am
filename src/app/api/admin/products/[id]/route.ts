@@ -170,7 +170,7 @@ export async function PUT(
         ...(price !== undefined && { price }),
         ...(salePrice !== undefined && { salePrice: salePrice === null || salePrice === '' ? null : salePrice }),
         ...(categoryId && { categoryId }),
-        ...(image !== undefined && { image: image || 'no-image' }), // Специальное значение для отсутствия изображения
+        ...(image !== undefined && { image: (image && image.trim() !== '' && image !== 'no-image') ? image : null }), // Сохраняем null для отсутствия изображения
         ...(images !== undefined && { images }), // Дополнительные изображения (JSON строка)
         ...(ingredients && { ingredients }),
         ...(isAvailable !== undefined && { isAvailable }),

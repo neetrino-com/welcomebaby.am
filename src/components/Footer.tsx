@@ -180,6 +180,7 @@ export default function Footer() {
                 width={100}
                 height={20}
                 className="h-5 w-auto opacity-90 hover:opacity-100 transition-opacity"
+                style={{ width: "auto", height: "auto" }}
               />
             </div>
           </div>
