@@ -27,10 +27,10 @@ export function isValidImagePath(imagePath: string | null | undefined): boolean 
 
 /**
  * Возвращает fallback изображение для товаров без картинки
- * @returns путь к fallback изображению
+ * @returns null - компоненты должны показывать placeholder без изображения
  */
-export function getFallbackImage(): string {
-  return '/images/nophoto.jpg';
+export function getFallbackImage(): null {
+  return null;
 }
 
 /**

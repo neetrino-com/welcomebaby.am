@@ -11,7 +11,7 @@ import ProductSection from "@/components/ProductSection";
 import HorizontalCategorySlider from "@/components/HorizontalCategorySlider";
 import { AnimatedCounter } from "@/components/AnimatedCounter";
 import TwinklingStars from "@/components/TwinklingStars";
-import { getFallbackImage } from "@/utils/imageUtils";
+// getFallbackImage больше не используется - используем null для отсутствующих изображений
 import { formatPrice } from "@/utils/priceUtils";
 
 import Footer from '@/components/Footer'
@@ -190,18 +190,24 @@ export default function Home() {
               {bannerProduct ? (
                 <div className="relative bg-white/25 backdrop-blur-xl rounded-2xl p-3 text-center border border-white/30 shadow-2xl hover:shadow-3xl transition-all duration-300 group">
                   {/* Product Image Container */}
-                  <div className="relative w-28 h-28 mx-auto mb-2 rounded-xl flex items-center justify-center overflow-hidden">
-                    <img 
-                      src={bannerProduct.image || getFallbackImage()} 
-                      alt={bannerProduct.name}
-                      className="relative w-full h-full object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
-                      onError={(e) => {
-                        e.currentTarget.src = getFallbackImage();
-                      }}
-                    />
+                  <div className="relative w-28 h-28 mx-auto mb-2 rounded-xl flex items-center justify-center overflow-hidden bg-gray-200">
+                    {bannerProduct.image ? (
+                      <img 
+                        src={bannerProduct.image} 
+                        alt={bannerProduct.name}
+                        className="relative w-full h-full object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
+                          if (nextElement) {
+                            nextElement.style.display = 'flex';
+                          }
+                        }}
+                      />
+                    ) : null}
                     <div 
                       className="w-full h-full flex items-center justify-center text-4xl"
-                      style={{ display: 'none' }}
+                      style={{ display: bannerProduct.image ? 'none' : 'flex' }}
                     >
                       🥟
                     </div>
@@ -257,18 +263,24 @@ export default function Home() {
               {bannerProduct ? (
                 <div className="relative bg-white/25 backdrop-blur-xl rounded-3xl p-4 text-center border border-white/30 shadow-2xl hover:shadow-3xl transition-all duration-300 group">
                   {/* Product Image Container */}
-                  <div className="relative w-36 h-36 mx-auto mb-3 rounded-2xl flex items-center justify-center overflow-hidden">
-                    <img 
-                      src={bannerProduct.image || getFallbackImage()} 
-                      alt={bannerProduct.name}
-                      className="relative w-full h-full object-cover rounded-2xl group-hover:scale-105 transition-transform duration-300"
-                      onError={(e) => {
-                        e.currentTarget.src = getFallbackImage();
-                      }}
-                    />
+                  <div className="relative w-36 h-36 mx-auto mb-3 rounded-2xl flex items-center justify-center overflow-hidden bg-gray-200">
+                    {bannerProduct.image ? (
+                      <img 
+                        src={bannerProduct.image} 
+                        alt={bannerProduct.name}
+                        className="relative w-full h-full object-cover rounded-2xl group-hover:scale-105 transition-transform duration-300"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
+                          if (nextElement) {
+                            nextElement.style.display = 'flex';
+                          }
+                        }}
+                      />
+                    ) : null}
                     <div 
                       className="w-full h-full flex items-center justify-center text-5xl"
-                      style={{ display: 'none' }}
+                      style={{ display: bannerProduct.image ? 'none' : 'flex' }}
                     >
                       🥟
                     </div>
@@ -363,16 +375,25 @@ export default function Home() {
                 {bannerProduct ? (
                   <>
                     {/* Product Image - узкая карточка для вертикальных изображений */}
-                    <div className="relative w-full h-[400px] overflow-hidden" style={{ backgroundColor: '#f5f5f5' }}>
-                      <img 
-                        src={bannerProduct.image || getFallbackImage()} 
-                        alt={bannerProduct.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        style={{ objectPosition: 'center calc(100% + 60px)' }}
-                        onError={(e) => {
-                          e.currentTarget.src = getFallbackImage();
-                        }}
-                      />
+                    <div className="relative w-full h-[400px] overflow-hidden flex items-center justify-center" style={{ backgroundColor: '#f5f5f5' }}>
+                      {bannerProduct.image ? (
+                        <img 
+                          src={bannerProduct.image} 
+                          alt={bannerProduct.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          style={{ objectPosition: 'center calc(100% + 60px)' }}
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
+                            if (nextElement) {
+                              nextElement.style.display = 'flex';
+                            }
+                          }}
+                        />
+                      ) : null}
+                      <div className="absolute inset-0 flex items-center justify-center text-6xl opacity-50" style={{ display: bannerProduct.image ? 'none' : 'flex' }}>
+                        🥟
+                      </div>
                     </div>
                     
                     {/* Content Section */}

@@ -30,14 +30,14 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // Нормализуем изображения товаров - все товары без изображения получат nophoto.jpg
+    // Нормализуем изображения товаров - все товары без изображения получат null
     const normalizedItems = wishlistItems.map(item => ({
       ...item,
       product: {
         ...item.product,
         image: (item.product.image && item.product.image.trim() !== '') 
           ? item.product.image 
-          : '/images/nophoto.jpg'
+          : null
       }
     }));
 
@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
         ...wishlistItem.product,
         image: (wishlistItem.product.image && wishlistItem.product.image.trim() !== '') 
           ? wishlistItem.product.image 
-          : '/images/nophoto.jpg'
+          : null
       }
     };
 

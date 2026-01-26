@@ -75,19 +75,19 @@ export async function GET(
       )
     }
 
-    // Нормализуем изображения - товары без изображения получат nophoto.jpg
+    // Нормализуем изображения - товары без изображения получат null
     const normalizedProduct = {
       ...product,
       image: (product.image && product.image.trim() !== '') 
         ? product.image 
-        : '/images/nophoto.jpg'
+        : null
     }
 
     const normalizedSimilarProducts = similarProducts.map(p => ({
       ...p,
       image: (p.image && p.image.trim() !== '') 
         ? p.image 
-        : '/images/nophoto.jpg'
+        : null
     }))
 
     // Возвращаем объединенные данные

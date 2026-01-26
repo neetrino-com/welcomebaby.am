@@ -39,12 +39,12 @@ export async function GET(
       )
     }
 
-    // Нормализуем изображение - товар без изображения получит nophoto.jpg
+    // Нормализуем изображение - товар без изображения получит null
     const normalizedProduct = {
       ...product,
       image: (product.image && product.image.trim() !== '') 
         ? product.image 
-        : '/images/nophoto.jpg'
+        : null
     }
 
     return NextResponse.json(normalizedProduct)
@@ -97,12 +97,12 @@ export async function PUT(
       }
     })
 
-    // Нормализуем изображение - товар без изображения получит nophoto.jpg
+    // Нормализуем изображение - товар без изображения получит null
     const normalizedProduct = {
       ...updatedProduct,
       image: (updatedProduct.image && updatedProduct.image.trim() !== '') 
         ? updatedProduct.image 
-        : '/images/nophoto.jpg'
+        : null
     }
 
     return NextResponse.json(normalizedProduct)

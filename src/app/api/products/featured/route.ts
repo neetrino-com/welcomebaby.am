@@ -30,12 +30,12 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    // Нормализуем изображения - все товары без изображения получат nophoto.jpg
+    // Нормализуем изображения - все товары без изображения получат null
     const normalizedProducts = products.map(product => ({
       ...product,
       image: (product.image && product.image.trim() !== '') 
         ? product.image 
-        : '/images/nophoto.jpg'
+        : null
     }))
 
     return NextResponse.json(normalizedProducts)

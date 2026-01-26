@@ -7,7 +7,7 @@ import Image from 'next/image'
 import { ShoppingCart, Heart, Eye } from 'lucide-react'
 import { Product } from '@/types'
 import { WishlistButton } from './WishlistButton'
-import { isValidImagePath, getFallbackImage } from '@/utils/imageUtils'
+import { isValidImagePath } from '@/utils/imageUtils'
 import { formatPrice } from '@/utils/priceUtils'
 
 interface ProductCardProps {
@@ -60,28 +60,14 @@ const ProductCard = memo(({ product, onAddToCart, variant = 'default', addedToCa
               }
             }}
           />
-            {/* Fallback изображение (скрыто по умолчанию) */}
+            {/* Fallback placeholder (скрыто по умолчанию) */}
             <div className="w-full h-full flex items-center justify-center bg-gray-200" style={{ display: 'none' }}>
-              <Image 
-                src={getFallbackImage()} 
-                alt="No image available"
-                width={80}
-                height={80}
-                className="opacity-50"
-                priority={false}
-              />
+              <span className="text-4xl opacity-50">🥟</span>
             </div>
           </>
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gray-200">
-            <Image 
-              src={getFallbackImage()} 
-              alt="No image available"
-              width={80}
-              height={80}
-              className="opacity-50"
-              priority={false}
-            />
+            <span className="text-4xl opacity-50">🥟</span>
           </div>
         )}
 

@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
       salePrice: product.salePrice,
       image: (product.image && product.image.trim() !== '') 
         ? product.image 
-        : '/images/nophoto.jpg',
+        : null,
       ingredients: product.ingredients,
       category: product.category?.name || 'Без категории',
       type: 'product' as const

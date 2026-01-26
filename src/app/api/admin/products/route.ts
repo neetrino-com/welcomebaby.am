@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
       ...product,
       image: (product.image && product.image.trim() !== '') 
         ? product.image 
-        : '/images/nophoto.jpg'
+        : null
     }))
 
     const totalPages = Math.ceil(total / limitNum)
@@ -200,7 +200,7 @@ export async function POST(request: NextRequest) {
         price,
         salePrice: salePrice === null || salePrice === '' ? null : salePrice,
         categoryId,
-        image: image && image.trim() !== '' ? image : '/images/nophoto.jpg', // Используем nophoto.jpg по умолчанию
+        image: image && image.trim() !== '' ? image : null, // Используем null по умолчанию
         images: images || null, // Дополнительные изображения (JSON строка)
         ingredients: Array.isArray(ingredients) ? JSON.stringify(ingredients) : (ingredients || ''), // Преобразуем массив в строку JSON или используем строку
         isAvailable,
@@ -218,12 +218,12 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Нормализуем изображение - товар без изображения получит nophoto.jpg
+    // Нормализуем изображение - товар без изображения получит null
     const normalizedProduct = {
       ...product,
       image: (product.image && product.image.trim() !== '') 
         ? product.image 
-        : '/images/nophoto.jpg'
+        : null
     }
 
     return NextResponse.json(normalizedProduct, { status: 201 })
