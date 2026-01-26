@@ -61,4 +61,4 @@ jspm_packages/
 *.exe
 *.msi
 *.dmg
-*.pkg
+*.pkgtsconfig.tsbuildinfo
