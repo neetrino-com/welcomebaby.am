@@ -37,46 +37,14 @@ export default function DefaultProductPage({
   const fetchProduct = async () => {
     try {
       setLoading(true)
-      
-      // Загружаем основной товар
-      const productResponse = await fetch(`/api/products/${id}`)
-      if (!productResponse.ok) {
-        throw new Error('Product not found')
+      const res = await fetch(`/api/products/${id}/details`, { cache: 'default' })
+      if (!res.ok) {
+        if (res.status === 404) notFound()
+        throw new Error('Failed to load product')
       }
-      const productData = await productResponse.json()
+      const { product: productData, relatedProducts: similarData } = await res.json()
       setProduct(productData)
-
-      // Загружаем похожие товары
-      let similarData: Product[] = []
-      
-      try {
-        // Сначала пытаемся загрузить товары из той же категории
-        if (productData.category?.id) {
-          const similarResponse = await fetch(`/api/products?category=${productData.category.id}&limit=8`)
-          if (similarResponse.ok) {
-            const data = await similarResponse.json()
-            similarData = Array.isArray(data) ? data.filter((p: Product) => p.id !== id) : []
-          }
-        }
-        
-        // Если похожих товаров мало, загружаем дополнительные товары
-        if (similarData.length < 4) {
-          const additionalResponse = await fetch(`/api/products?limit=8`)
-          if (additionalResponse.ok) {
-            const data = await additionalResponse.json()
-            if (Array.isArray(data)) {
-              const additional = data.filter((p: Product) => 
-                p.id !== id && !similarData.some(sp => sp.id === p.id)
-              )
-              similarData = [...similarData, ...additional].slice(0, 8)
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error loading similar products:', error)
-      }
-      
-      setSimilarProducts(similarData)
+      setSimilarProducts(similarData || [])
     } catch (error) {
       console.error('Error fetching product:', error)
       notFound()

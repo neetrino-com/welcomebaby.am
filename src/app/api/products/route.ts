@@ -2,25 +2,73 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { logger } from '@/lib/logger'
 
-// GET /api/products - получить все товары
+const productSelect = {
+  id: true,
+  name: true,
+  description: true,
+  price: true,
+  salePrice: true,
+  categoryId: true,
+  category: {
+    select: {
+      id: true,
+      name: true,
+      isActive: true,
+    },
+  },
+  image: true,
+  ingredients: true,
+  isAvailable: true,
+  stock: true,
+  status: true,
+  createdAt: true,
+}
+
+function getOrderBy(sortBy: string | null) {
+  switch (sortBy) {
+    case 'name-asc':
+      return { name: 'asc' as const }
+    case 'name-desc':
+      return { name: 'desc' as const }
+    case 'price-asc':
+      return { price: 'asc' as const }
+    case 'price-desc':
+      return { price: 'desc' as const }
+    case 'newest':
+      return { createdAt: 'desc' as const }
+    case 'oldest':
+      return { createdAt: 'asc' as const }
+    default:
+      return { createdAt: 'desc' as const }
+  }
+}
+
+// GET /api/products - получить товары (поддержка page/limit для каталога)
 export async function GET(request: NextRequest) {
+  const start = Date.now()
   try {
     const { searchParams } = new URL(request.url)
     const category = searchParams.get('category')
+    const categoryId = searchParams.get('categoryId')
     const search = searchParams.get('search')
     const status = searchParams.get('status')
     const featured = searchParams.get('featured')
     const newProducts = searchParams.get('new')
     const saleProducts = searchParams.get('sale')
     const newToys = searchParams.get('newToys')
+    const pageParam = searchParams.get('page')
+    const limitParam = searchParams.get('limit')
+    const sortBy = searchParams.get('sortBy')
 
-    const whereClause: any = {
-      isAvailable: true
+    const whereClause: Record<string, unknown> = {
+      isAvailable: true,
     }
 
-    if (category && category !== 'Все') {
+    if (categoryId) {
+      whereClause.categoryId = categoryId
+    } else if (category && category !== 'Все') {
       whereClause.category = {
-        name: category
+        name: category,
       }
     }
 
@@ -33,81 +81,77 @@ export async function GET(request: NextRequest) {
     }
 
     if (newProducts === 'true') {
-      // Товары добавленные за последние 30 дней
       const thirtyDaysAgo = new Date()
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-      
-      whereClause.createdAt = {
-        gte: thirtyDaysAgo
-      }
+      whereClause.createdAt = { gte: thirtyDaysAgo }
     }
 
     if (saleProducts === 'true') {
-      whereClause.salePrice = {
-        not: null
-      }
+      whereClause.salePrice = { not: null }
     }
 
     if (newToys === 'true') {
-      // Новые музыкальные игрушки за последние 30 дней
       const thirtyDaysAgo = new Date()
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-      
-      whereClause.createdAt = {
-        gte: thirtyDaysAgo
-      }
-      whereClause.category = {
-        name: 'Երաժշտական խաղալիքներ'
-      }
+      whereClause.createdAt = { gte: thirtyDaysAgo }
+      whereClause.category = { name: 'Երաժշտական խաղալիքներ' }
     }
 
     if (search) {
       whereClause.OR = [
         { name: { contains: search, mode: 'insensitive' } },
         { description: { contains: search, mode: 'insensitive' } },
-        { ingredients: { contains: search, mode: 'insensitive' } }
+        { ingredients: { contains: search, mode: 'insensitive' } },
       ]
     }
 
-    const products = await prisma.product.findMany({
-      where: whereClause,
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        price: true,
-        salePrice: true,
-        categoryId: true,
-        category: {
-          select: {
-            id: true,
-            name: true,
-            isActive: true
-          }
-        },
-        image: true,
-        ingredients: true,
-        isAvailable: true,
-        stock: true,
-        status: true,
-        createdAt: true
-      }
-    })
+    const page = pageParam ? Math.max(1, parseInt(pageParam, 10)) : 0
+    const limit = limitParam ? Math.min(100, Math.max(1, parseInt(limitParam, 10))) : 0
+    const usePagination = page > 0 && limit > 0
 
-    // Нормализуем изображения - все товары без изображения получат null
-    const normalizedProducts = products.map(product => ({
+    const orderBy = getOrderBy(sortBy)
+
+    const [products, total] = usePagination
+      ? await Promise.all([
+          prisma.product.findMany({
+            where: whereClause,
+            orderBy,
+            skip: (page - 1) * limit,
+            take: limit,
+            select: productSelect,
+          }),
+          prisma.product.count({ where: whereClause }),
+        ])
+      : [
+          await prisma.product.findMany({
+            where: whereClause,
+            orderBy,
+            select: productSelect,
+          }),
+          0,
+        ]
+
+    const normalizedProducts = products.map((product) => ({
       ...product,
-      image: (product.image && product.image.trim() !== '') 
-        ? product.image 
-        : null
+      image: product.image && product.image.trim() !== '' ? product.image : null,
     }))
 
-    // Возвращаем массив продуктов напрямую
-    const response = NextResponse.json(normalizedProducts)
+    const queryMs = Date.now() - start
+    const body = usePagination
+      ? {
+          data: normalizedProducts,
+          total,
+          page,
+          limit,
+          pages: Math.ceil(total / limit),
+        }
+      : normalizedProducts
+    const sizeBytes = Buffer.byteLength(JSON.stringify(body), 'utf8')
+    console.log(`[API /api/products] prisma: ${queryMs}ms, response size: ${sizeBytes} bytes`)
+
+    const response = NextResponse.json(body)
     response.headers.set('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=7200')
     response.headers.set('CDN-Cache-Control', 'public, s-maxage=3600')
-    
     return response
   } catch (error) {
     logger.error('Error fetching products', error)

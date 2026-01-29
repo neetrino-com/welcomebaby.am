@@ -36,74 +36,18 @@ export default function Home() {
 
   const fetchProducts = async () => {
     try {
-      // Загружаем данные из API (которые теперь работают с базой данных)
-      const [productsResponse, featuredResponse, bannerResponse, newResponse, saleResponse, newToysResponse] = await Promise.all([
-        fetch('/api/products', { 
-          cache: 'force-cache',
-          next: { revalidate: 300 } // кэш на 5 минут
-        }),
-        fetch('/api/products?featured=true', { 
-          cache: 'force-cache',
-          next: { revalidate: 300 }
-        }),
-        fetch('/api/products?status=BANNER', { 
-          cache: 'force-cache',
-          next: { revalidate: 300 }
-        }),
-        fetch('/api/products?new=true', { 
-          cache: 'force-cache',
-          next: { revalidate: 300 }
-        }),
-        fetch('/api/products?sale=true', { 
-          cache: 'force-cache',
-          next: { revalidate: 300 }
-        }),
-        fetch('/api/products?newToys=true', { 
-          cache: 'force-cache',
-          next: { revalidate: 300 }
-        })
-      ])
-      
-      if (!productsResponse.ok) {
-        throw new Error(`Products API error: ${productsResponse.status}`)
-      }
-      if (!featuredResponse.ok) {
-        throw new Error(`Featured API error: ${featuredResponse.status}`)
-      }
-      if (!bannerResponse.ok) {
-        throw new Error(`Banner API error: ${bannerResponse.status}`)
-      }
-      if (!newResponse.ok) {
-        throw new Error(`New products API error: ${newResponse.status}`)
-      }
-      if (!saleResponse.ok) {
-        throw new Error(`Sale products API error: ${saleResponse.status}`)
-      }
-      if (!newToysResponse.ok) {
-        throw new Error(`New toys API error: ${newToysResponse.status}`)
-      }
-      
-      const productsData = await productsResponse.json()
-      const featuredData = await featuredResponse.json()
-      const bannerData = await bannerResponse.json()
-      const newData = await newResponse.json()
-      const saleData = await saleResponse.json()
-      const newToysData = await newToysResponse.json()
-      
-      setProducts(productsData || [])
-      
-      // Фильтруем товары для первой категории для секции хитов
-      const firstCategory = (productsData || []).filter((product: Product) => product.categoryId === 'Հյուսեր')
-      setComboProducts(firstCategory.slice(0, 4))
-      
-      setFeaturedProducts(featuredData || [])
-      setNewProducts(newData || [])
-      setSaleProducts(saleData || [])
-      setNewToys(newToysData || [])
-      setBannerProduct(bannerData?.[0] || null)
-      
+      const res = await fetch('/api/home', { cache: 'default' })
+      if (!res.ok) throw new Error(`Home API error: ${res.status}`)
+      const data = await res.json()
+      setProducts(data.products || [])
+      setComboProducts(data.comboProducts || [])
+      setFeaturedProducts(data.featuredProducts || [])
+      setNewProducts(data.newProducts || [])
+      setSaleProducts(data.saleProducts || [])
+      setNewToys(data.newToysProducts || [])
+      setBannerProduct(data.bannerProduct ?? null)
     } catch (error) {
-      console.error('Error fetching data from database:', error)
+      console.error('Error fetching home data:', error)
       setProducts([])
       setComboProducts([])
       setFeaturedProducts([])

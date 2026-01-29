@@ -144,11 +144,12 @@ function ProductsPageContent() {
       setSelectedProductId(selectedParam)
     }
     
-    // Обработка параметра category из URL
+    // Обработка параметра category из URL (ожидается имя или id категории; в API передаём только id)
     if (categoryParam && categories.length > 0) {
-      const decodedCategory = decodeURIComponent(categoryParam)
-      const foundCategory = categories.find(cat => cat.name === decodedCategory)
-      
+      const decoded = decodeURIComponent(categoryParam)
+      const foundCategory =
+        categories.find((cat) => cat.id === decoded) ||
+        categories.find((cat) => cat.name === decoded)
       if (foundCategory) {
         setSelectedCategory(foundCategory.name)
         setSelectedCategoryId(foundCategory.id)
