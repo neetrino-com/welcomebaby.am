@@ -2,23 +2,23 @@
 
 import { useSession, getSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Fragment } from 'react'
 import Link from 'next/link'
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  MapPin, 
+import {
+  User,
+  Phone,
+  MapPin,
   Clock,
   CheckCircle,
   XCircle,
   Package,
-  ArrowLeft,
   Edit,
   Trash2,
-  LogOut
+  LogOut,
+  ChevronLeft,
 } from 'lucide-react'
 import Footer from '@/components/Footer'
+import SidebarLayout, { type SidebarNavItem } from '@/components/SidebarLayout'
 import EditProfileModal from '@/components/EditProfileModal'
 import DeleteAccountModal from '@/components/DeleteAccountModal'
 import { formatPrice } from '@/utils/priceUtils'
@@ -211,10 +211,13 @@ export default function ProfilePage() {
 
   if (status === 'loading' || isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center relative" style={{ backgroundColor: '#ffffff' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#f1f5f9' }}>
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-t-transparent rounded-full animate-spin mx-auto mb-4" style={{ borderColor: '#f3d98c', borderTopColor: 'transparent' }}></div>
-          <p className="text-white text-lg">Բեռնվում է...</p>
+          <div
+            className="w-12 h-12 border-4 border-t-transparent rounded-full animate-spin mx-auto mb-4"
+            style={{ borderColor: '#f3d98c', borderTopColor: 'transparent' }}
+          />
+          <p className="text-gray-600">Բեռնվում է...</p>
         </div>
       </div>
     )
@@ -224,262 +227,215 @@ export default function ProfilePage() {
     return null
   }
 
+  const profileNavItems: SidebarNavItem[] = [
+    { href: '#profile', label: 'Պրոֆիլ', icon: User },
+    { href: '#orders', label: 'Պատվերներ', icon: Package },
+  ]
+
   return (
-    <div className="min-h-screen relative" style={{ backgroundColor: '#ffffff' }}>
-      
-      {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200">
-        <div className="flex items-center justify-between px-4 py-3 h-16">
-          <Link 
-            href="/"
-            className="flex items-center text-gray-600 hover:text-[#f3d98c] transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5 mr-2" />
-            Վերադառնալ
-          </Link>
-          <h1 className="text-lg font-semibold text-gray-900">Պրոֆիլ</h1>
-          <div className="w-20"></div> {/* Spacer for centering */}
-        </div>
-      </div>
-      
-      {/* Отступ для fixed хедера */}
-      <div className="lg:hidden h-20"></div>
-      <div className="hidden lg:block h-28"></div>
-      
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-20 lg:pt-32 lg:pb-8">
-        {/* Mobile Profile Card */}
-        <div className="lg:hidden mb-6">
-          
-          {/* Mobile Profile Card */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-            <div className="flex items-center space-x-4 mb-4">
-              <div className="w-16 h-16 bg-[#f3d98c] rounded-full flex items-center justify-center">
-                <User className="h-8 w-8 text-white" />
-              </div>
-              <div className="flex-1">
-                <h2 className="text-lg font-bold text-gray-900">{userProfile.name || 'Օգտատեր'}</h2>
-                <p className="text-sm text-gray-600">{userProfile.email}</p>
-              </div>
-              <button 
-                onClick={() => setIsEditModalOpen(true)}
-                className="p-2 text-[#f3d98c] hover:bg-[#f3d98c]/10 rounded-full transition-colors"
-              >
-                <Edit className="h-5 w-5" />
-              </button>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4 text-sm mb-4">
-              <div className="flex items-center space-x-2">
-                <Phone className="h-4 w-4 text-gray-400" />
-                <span className="text-gray-600">{userProfile.phone || 'Չի նշված'}</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <MapPin className="h-4 w-4 text-gray-400" />
-                <span className="text-gray-600 truncate">{userProfile.address || 'Չի նշված'}</span>
-              </div>
-            </div>
-            
-            {/* Mobile Logout Button */}
-            <button
-              onClick={() => signOut({ callbackUrl: '/' })}
-              className="w-full text-gray-600 text-sm py-2 rounded-lg font-normal hover:text-[#f3d98c] hover:bg-[#f3d98c]/10 transition-all duration-200 flex items-center justify-center space-x-1 border border-gray-200 hover:border-[#f3d98c]/30 mb-2"
+    <Fragment>
+    <SidebarLayout
+      sidebarTitle="Հաշիվ"
+      headerTitle="Իմ պրոֆիլը"
+      navItems={profileNavItems}
+      sidebarHeader={
+        <div className="p-4">
+          <div className="flex items-center gap-3">
+            <div
+              className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: '#f3d98c' }}
             >
-              <LogOut className="h-3 w-3" />
-              <span>Ելք հաշվից</span>
-            </button>
-            
-            {/* Mobile Delete Account Button */}
-            <button
-              onClick={() => setIsDeleteModalOpen(true)}
-              className="w-full text-gray-400 text-sm py-2 rounded-lg font-normal hover:text-red-500 hover:bg-red-50 transition-all duration-200 flex items-center justify-center space-x-1 border border-gray-200 hover:border-red-200"
-            >
-              <Trash2 className="h-3 w-3" />
-              <span>Ջնջել հաշիվը</span>
-            </button>
+              <User className="h-6 w-6" style={{ color: '#002c45' }} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold text-white truncate">{userProfile.name || 'Օգտատեր'}</p>
+              <p className="text-sm text-white/70 truncate">{userProfile.email}</p>
+            </div>
           </div>
         </div>
-
-        {/* Desktop Header */}
-        <div className="hidden lg:flex items-center space-x-4 mb-8">
-          <Link 
+      }
+      sidebarFooter={
+        <div className="space-y-1">
+          <Link
             href="/"
-            className="flex items-center text-gray-700 hover:text-[#f3d98c] transition-colors"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
           >
-            <ArrowLeft className="h-5 w-5 mr-2" />
-            Գլխավոր
+            <ChevronLeft className="h-5 w-5" />
+            Դեպի կայք
           </Link>
-          <div className="h-8 w-px bg-gray-300"></div>
-          <h1 className="text-3xl font-bold text-gray-900">Իմ պրոֆիլը</h1>
+          <button
+            onClick={() => signOut({ callbackUrl: '/' })}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+          >
+            <LogOut className="h-5 w-5" />
+            Ելք հաշվից
+          </button>
+          <button
+            onClick={() => setIsDeleteModalOpen(true)}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/60 hover:bg-red-500/20 hover:text-red-300 transition-colors"
+          >
+            <Trash2 className="h-5 w-5" />
+            Ջնջել հաշիվը
+          </button>
         </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
-          {/* Profile Info - Desktop Only */}
-          <div className="hidden lg:block lg:col-span-1">
-            <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">Պրոֆիլի մասին տեղեկություն</h2>
-              
-              <div className="space-y-4">
-                <div className="flex items-center space-x-3">
-                  <User className="h-5 w-5 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-500">Անուն</p>
-                    <p className="font-medium text-gray-900">{userProfile.name || 'Չի նշված'}</p>
+      }
+      mainClassName="pb-20 lg:pb-8"
+    >
+      <div className="max-w-5xl mx-auto space-y-8">
+            {/* Profile card */}
+            <section id="profile" className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              <div className="p-4 md:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                  <div className="flex items-center gap-4">
+                    <div
+                      className="w-16 h-16 rounded-full flex items-center justify-center flex-shrink-0"
+                      style={{ backgroundColor: '#f3d98c' }}
+                    >
+                      <User className="h-8 w-8" style={{ color: '#002c45' }} />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold text-gray-900">{userProfile.name || 'Օգտատեր'}</h2>
+                      <p className="text-sm text-gray-600">{userProfile.email}</p>
+                    </div>
                   </div>
-                </div>
-                
-                <div className="flex items-center space-x-3">
-                  <Mail className="h-5 w-5 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-500">Էլ. փոստ</p>
-                    <p className="font-medium text-gray-900">{userProfile.email}</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-3">
-                  <Phone className="h-5 w-5 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-500">Հեռախոս</p>
-                    <p className="font-medium text-gray-900">{userProfile.phone || 'Չի նշված'}</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-3">
-                  <MapPin className="h-5 w-5 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-500">Հասցե</p>
-                    <p className="font-medium text-gray-900">{userProfile.address || 'Չի նշված'}</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="space-y-3 mt-6">
-                <button 
-                  onClick={() => setIsEditModalOpen(true)}
-                  className="w-full text-gray-900 py-3 rounded-xl font-semibold transition-colors flex items-center justify-center"
-                  style={{ backgroundColor: '#f3d98c' }}
-                >
-                  <Edit className="h-5 w-5 mr-2" />
-                  Խմբագրել պրոֆիլը
-                </button>
-                
-                <button
-                  onClick={() => signOut({ callbackUrl: '/' })}
-                  className="w-full text-gray-600 text-sm py-2 rounded-lg font-normal hover:text-gray-900 hover:bg-gray-50 transition-all duration-200 flex items-center justify-center space-x-1 border border-gray-200 hover:border-gray-300 mb-2"
-                >
-                  <LogOut className="h-3 w-3" />
-                  <span>Ելք հաշվից</span>
-                </button>
-                
-                <button
-                  onClick={() => setIsDeleteModalOpen(true)}
-                  className="w-full text-gray-400 text-sm py-2 rounded-lg font-normal hover:text-red-500 hover:bg-red-50 transition-all duration-200 flex items-center justify-center space-x-1 border border-gray-200 hover:border-red-300"
-                >
-                  <Trash2 className="h-3 w-3" />
-                  <span>Ջնջել հաշիվը</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Orders History */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-2xl shadow-lg p-4 md:p-6 border border-gray-200">
-              <h2 className="text-lg md:text-xl font-semibold text-gray-900 mb-4 md:mb-6">Պատվերների պատմություն</h2>
-              
-              {orders.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">
-                  <Package className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                  <p>Դուք դեռ պատվերներ չունեք</p>
-                  <Link 
-                    href="/products"
-                    className="inline-block mt-4 text-gray-900 px-6 py-3 rounded-lg transition-colors"
+                  <button
+                    onClick={() => setIsEditModalOpen(true)}
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-gray-900 transition-colors shrink-0"
                     style={{ backgroundColor: '#f3d98c' }}
                   >
-                    Պատվիրել
-                  </Link>
+                    <Edit className="h-5 w-5" />
+                    Խմբագրել
+                  </button>
                 </div>
-              ) : (
-                <div className="space-y-3 md:space-y-4">
-                  {orders.map((order) => {
-                    const statusInfo = getStatusInfo(order.status)
-                    return (
-                      <div key={order.id} className="border border-gray-200 rounded-xl p-3 md:p-4 bg-gray-50">
-                        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-3 md:mb-4">
-                          <div className="mb-2 md:mb-0">
-                            <h3 className="font-semibold text-gray-900 text-sm md:text-base">Պատվեր #{order.id.slice(-8)}</h3>
-                            <p className="text-xs md:text-sm text-gray-500">
-                              {new Date(order.createdAt).toLocaleDateString('ru-RU', {
-                                year: 'numeric',
-                                month: 'short',
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })}
-                            </p>
-                          </div>
-                          <div className="flex items-center justify-between md:flex-col md:items-end">
-                            <p className="text-base md:text-lg font-bold text-gray-900">{formatPrice(order.total)} ֏</p>
-                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${statusInfo.bg} ${statusInfo.color}`}>
-                              {getStatusIcon(order.status)}
-                              <span className="ml-1">{statusInfo.text}</span>
-                            </span>
-                          </div>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          {order.items.map((item, index) => (
-                            <div key={index} className="flex items-center space-x-2 md:space-x-3">
-                              <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0"
-                                style={{ backgroundColor: '#f3d98c' + '20' }}>
-                                {item.product.image ? (
-                                  <img 
-                                    src={item.product.image} 
-                                    alt={item.product.name}
-                                    className="w-full h-full object-cover"
-                                  />
-                                ) : (
-                                  <Package className="h-5 w-5 md:h-6 md:w-6"
-                                    style={{ color: '#f3d98c' }} />
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="font-medium text-gray-900 text-sm md:text-base truncate">{item.product.name}</p>
-                                <p className="text-xs md:text-sm text-gray-500">{item.quantity} հատ × {formatPrice(item.price)} ֏</p>
-                              </div>
-                              <p className="font-semibold text-gray-900 text-sm md:text-base flex-shrink-0">{formatPrice(item.quantity * item.price)} ֏</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
+                    <Phone className="h-5 w-5 text-gray-400 flex-shrink-0" />
+                    <div>
+                      <p className="text-gray-500">Հեռախոս</p>
+                      <p className="font-medium text-gray-900">{userProfile.phone || 'Չի նշված'}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
+                    <MapPin className="h-5 w-5 text-gray-400 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-gray-500">Հասցե</p>
+                      <p className="font-medium text-gray-900 truncate">{userProfile.address || 'Չի նշված'}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Orders */}
+            <section id="orders" className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              <div className="px-4 md:px-6 py-4 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-900">Պատվերների պատմություն</h2>
+              </div>
+              <div className="p-4 md:p-6">
+                {orders.length === 0 ? (
+                  <div className="text-center py-12 text-gray-500">
+                    <div className="w-14 h-14 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: '#f3d98c' }}>
+                      <Package className="h-7 w-7" style={{ color: '#002c45' }} />
+                    </div>
+                    <p className="mb-4">Դուք դեռ պատվերներ չունեք</p>
+                    <Link
+                      href="/products"
+                      className="inline-flex items-center justify-center px-6 py-3 rounded-xl font-semibold text-gray-900 transition-colors"
+                      style={{ backgroundColor: '#f3d98c' }}
+                    >
+                      Պատվիրել
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {orders.map((order) => {
+                      const statusInfo = getStatusInfo(order.status)
+                      return (
+                        <div
+                          key={order.id}
+                          className="border border-gray-200 rounded-xl p-4 bg-gray-50/50"
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+                            <div>
+                              <h3 className="font-semibold text-gray-900">Պատվեր #{order.id.slice(-8)}</h3>
+                              <p className="text-xs text-gray-500">
+                                {new Date(order.createdAt).toLocaleDateString('hy-AM', {
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </p>
                             </div>
-                          ))}
+                            <div className="flex items-center gap-3">
+                              <p className="text-lg font-bold text-gray-900">{formatPrice(order.total)} ֏</p>
+                              <span
+                                className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium ${statusInfo.bg} ${statusInfo.color}`}
+                              >
+                                {getStatusIcon(order.status)}
+                                {statusInfo.text}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            {order.items.map((item, index) => (
+                              <div
+                                key={index}
+                                className="flex items-center gap-3 py-2 border-t border-gray-200/80 first:border-t-0"
+                              >
+                                <div
+                                  className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0"
+                                  style={{ backgroundColor: '#f3d98c' + '40' }}
+                                >
+                                  {item.product.image ? (
+                                    <img
+                                      src={item.product.image}
+                                      alt={item.product.name}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  ) : (
+                                    <Package className="h-5 w-5" style={{ color: '#002c45' }} />
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium text-gray-900 text-sm truncate">{item.product.name}</p>
+                                  <p className="text-xs text-gray-500">
+                                    {item.quantity} հատ × {formatPrice(item.price)} ֏
+                                  </p>
+                                </div>
+                                <p className="font-semibold text-gray-900 text-sm flex-shrink-0">
+                                  {formatPrice(item.quantity * item.price)} ֏
+                                </p>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            </section>
           </div>
-        </div>
-      </div>
-      
-      {/* Hide Footer on Mobile and Tablet */}
+    </SidebarLayout>
+
       <div className="hidden lg:block">
         <Footer />
       </div>
-      
-      {/* Edit Profile Modal */}
+
       <EditProfileModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         user={userProfile}
         onSave={handleSaveProfile}
       />
-      
-      {/* Delete Account Modal */}
       <DeleteAccountModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={handleDeleteAccount}
         isLoading={isDeletingAccount}
       />
-    </div>
+    </Fragment>
   )
 }
