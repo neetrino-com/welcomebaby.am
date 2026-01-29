@@ -336,7 +336,8 @@ export default function Home() {
                           }}
                         />
                       ) : null}
-                      <div className="absolute inset-0 flex items-center justify-center text-6xl opacity-50" style={{ display: (bannerProduct.image && bannerProduct.image !== 'no-image' && isValidImagePath(bannerProduct.image)) ? 'none' : 'flex' }}>
+                      {/* Placeholder: плюшевый мишка, когда нет изображения баннера */}
+                      <div className="absolute inset-0 flex items-center justify-center text-6xl opacity-50" style={{ display: (bannerProduct.image && bannerProduct.image !== 'no-image' && isValidImagePath(bannerProduct.image)) ? 'none' : 'flex' }} aria-hidden="true">
                         🧸
                       </div>
                     </div>

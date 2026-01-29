@@ -1,11 +1,9 @@
 'use client'
 
 import { useState, useEffect, useMemo, useCallback, useRef, Suspense } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
-import { Search } from 'lucide-react'
+import { useSearchParams } from 'next/navigation'
 import { useCart } from '@/hooks/useCart'
 import { useInstantSearch } from '@/hooks/useInstantSearch'
-import { SearchDropdown } from '@/components/SearchDropdown'
 import { Product, Category } from '@/types'
 import ProductCard from '@/components/ProductCard'
 import HorizontalCategorySlider from '@/components/HorizontalCategorySlider'
@@ -14,7 +12,6 @@ import Footer from '@/components/Footer'
 
 function ProductsPageContent() {
   const searchParams = useSearchParams()
-  const router = useRouter()
   const [products, setProducts] = useState<Product[]>([])
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
@@ -27,22 +24,9 @@ function ProductsPageContent() {
   const [sortBy, setSortBy] = useState('name-asc')
   const { addItem } = useCart()
   const selectedProductRef = useRef<HTMLDivElement>(null)
-  const searchRef = useRef<HTMLDivElement>(null)
 
-  // Instant search hook
-  const {
-    query,
-    setQuery,
-    results,
-    loading: searchLoading,
-    error: searchError,
-    isOpen,
-    setIsOpen,
-    selectedIndex,
-    setSelectedIndex,
-    handleKeyDown,
-    clearSearch
-  } = useInstantSearch({
+  // Для поддержки URL ?search= и сообщения «ничего не найдено»
+  const { query, setQuery, clearSearch } = useInstantSearch({
     debounceMs: 200,
     minQueryLength: 2,
     maxResults: 8
@@ -156,39 +140,6 @@ function ProductsPageContent() {
       }
     }
   }, [searchParams, setQuery, categories])
-
-  // Закрытие dropdown при клике вне его
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-        setIsOpen(false)
-      }
-    }
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-      return () => document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [isOpen, setIsOpen])
-
-  // Обработка клика по результату поиска
-  const handleResultClick = useCallback((result: any) => {
-    router.push(`/products/${result.id}`)
-    setIsOpen(false)
-    clearSearch()
-  }, [router, setIsOpen, clearSearch])
-
-  // Кастомный обработчик клавиатуры для Enter
-  const handleCustomKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && isOpen && selectedIndex >= 0 && selectedIndex < results.length) {
-      e.preventDefault()
-      const selectedResult = results[selectedIndex]
-      handleResultClick(selectedResult)
-    } else {
-      // Используем стандартный обработчик для других клавиш
-      handleKeyDown(e)
-    }
-  }, [isOpen, selectedIndex, results, handleResultClick, handleKeyDown])
 
   // Прокрутка к выбранному товару
   useEffect(() => {
@@ -306,48 +257,6 @@ function ProductsPageContent() {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-4 drop-shadow-lg">Արտադրանքի Կատալոգ</h1>
-        </div>
-
-        {/* Search and Filter */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
-            <div className="flex-1 lg:w-80 relative" ref={searchRef}>
-              <Search className={`absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 ${
-                searchLoading ? 'text-primary-500 animate-pulse' : 'text-gray-500'
-              }`} />
-              <input
-                type="text"
-                placeholder="Փնտրել անվանումով, նկարագրությամբ կամ բաղադրիչներով..."
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={handleCustomKeyDown}
-                onFocus={() => setIsOpen(true)}
-                className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-lg text-gray-900 placeholder-gray-600 bg-white transition-all duration-300 shadow-sm hover:shadow-md focus:bg-white"
-                aria-controls="search-results"
-                aria-expanded={isOpen}
-                aria-autocomplete="list"
-              />
-              {searchLoading && (
-                <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-500"></div>
-                </div>
-              )}
-              
-              {/* Search Dropdown */}
-              <SearchDropdown
-                results={results}
-                loading={searchLoading}
-                error={searchError}
-                isOpen={isOpen}
-                selectedIndex={selectedIndex}
-                onResultClick={handleResultClick}
-                onClose={() => setIsOpen(false)}
-                className="top-full left-0"
-              />
-            </div>
-          </div>
-
-          {/* Category Filter - будет заменен на HorizontalCategorySlider ниже */}
         </div>
 
         {/* Categories Block - без заголовка и подзаголовка */}
