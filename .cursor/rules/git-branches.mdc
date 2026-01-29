@@ -1,0 +1,11 @@
+---
+description: В какую ветку делать commit и push по запросу пользователя
+alwaysApply: true
+---
+
+# Git: ветки для commit и push
+
+- **«сделай коммит пуш в development»** / **«commit push in development»** — выполнить `git add` (изменённые файлы), `git commit`, затем переключиться на ветку `development` (или остаться на ней), закоммитить туда и выполнить `git push origin development`.
+- **«коммит пуш в main»** / **«commit push в main»** / **«commit push to main»** — выполнить commit и push в ветку `main` (переключиться на `main`, закоммитить, `git push origin main`).
+
+Если пользователь говорит просто «коммит пуш» без указания ветки — уточнить: в `main` или в `development` (либо использовать ветку по умолчанию проекта, если она задана).
