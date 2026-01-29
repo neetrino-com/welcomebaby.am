@@ -23,7 +23,7 @@ export default function OptimizedImage({
   className = '',
   priority = false,
   sizes = '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw',
-  fallback = '🥟',
+  fallback = '🧸',
   style = {}
 }: OptimizedImageProps) {
   const [imageError, setImageError] = useState(false)

@@ -154,7 +154,7 @@ export default function Home() {
                       className="w-full h-full flex items-center justify-center text-4xl"
                       style={{ display: (bannerProduct.image && bannerProduct.image !== 'no-image' && isValidImagePath(bannerProduct.image)) ? 'none' : 'flex' }}
                     >
-                      🥟
+                      🧸
                     </div>
                   </div>
                   
@@ -227,7 +227,7 @@ export default function Home() {
                       className="w-full h-full flex items-center justify-center text-5xl"
                       style={{ display: (bannerProduct.image && bannerProduct.image !== 'no-image' && isValidImagePath(bannerProduct.image)) ? 'none' : 'flex' }}
                     >
-                      🥟
+                      🧸
                     </div>
                   </div>
                   
@@ -337,7 +337,7 @@ export default function Home() {
                         />
                       ) : null}
                       <div className="absolute inset-0 flex items-center justify-center text-6xl opacity-50" style={{ display: (bannerProduct.image && bannerProduct.image !== 'no-image' && isValidImagePath(bannerProduct.image)) ? 'none' : 'flex' }}>
-                        🥟
+                        🧸
                       </div>
                     </div>
                     

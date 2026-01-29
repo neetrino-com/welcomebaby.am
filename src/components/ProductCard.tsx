@@ -61,12 +61,12 @@ const ProductCard = memo(({ product, onAddToCart, variant = 'default', addedToCa
           />
             {/* Fallback placeholder (скрыто по умолчанию) */}
             <div className="w-full h-full flex items-center justify-center bg-gray-200" style={{ display: 'none' }}>
-              <span className="text-4xl opacity-50">🥟</span>
+              <span className="text-4xl opacity-50">🧸</span>
             </div>
           </>
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gray-200">
-            <span className="text-4xl opacity-50">🥟</span>
+            <span className="text-4xl opacity-50">🧸</span>
           </div>
         )}
 

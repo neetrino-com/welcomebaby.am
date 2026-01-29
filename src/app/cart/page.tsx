@@ -153,7 +153,7 @@ export default function CartPage() {
                         className="w-full h-full flex items-center justify-center text-2xl"
                         style={{ display: (item.product.image && item.product.image !== 'no-image') ? 'none' : 'flex' }}
                       >
-                        🥟
+                        🧸
                       </div>
                     </div>
                     
@@ -247,7 +247,7 @@ export default function CartPage() {
                           className="w-full h-full flex items-center justify-center text-3xl"
                           style={{ display: (item.product.image && item.product.image !== 'no-image') ? 'none' : 'flex' }}
                         >
-                          🥟
+                          🧸
                         </div>
                       </div>
                       

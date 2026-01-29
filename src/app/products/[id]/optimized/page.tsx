@@ -171,7 +171,7 @@ export default async function OptimizedProductPage({
                         transform: 'perspective(1000px) rotateX(5deg) rotateY(-2deg)',
                       }}
                     >
-                      🥟
+                      🧸
                     </div>
                   )}
                   

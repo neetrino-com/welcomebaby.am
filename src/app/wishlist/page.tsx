@@ -186,7 +186,7 @@ function WishlistContent() {
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-white/20 text-6xl">
-                        🥟
+                        🧸
                       </div>
                     )}
                   </Link>
