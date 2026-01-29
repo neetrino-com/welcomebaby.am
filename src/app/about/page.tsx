@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { Clock, Users, Heart, Award, ChefHat } from 'lucide-react'
+import { Clock, Heart, Award } from 'lucide-react'
 import { AnimatedCounter } from "@/components/AnimatedCounter"
 import Footer from "@/components/Footer"
 
@@ -83,36 +83,6 @@ export default function AboutPage() {
             </div>
           </div>
         </div>
-
-        {/* Team Section */}
-        <div className="mb-24">
-          <h2 className="text-4xl font-bold text-center text-gray-900 mb-16">Մեր թիմը</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-            <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow text-center group">
-              <div className="w-32 h-32 rounded-full mx-auto mb-6 flex items-center justify-center group-hover:scale-105 transition-transform" style={{ backgroundColor: '#f3d98c' }}>
-                <ChefHat className="h-16 w-16" style={{ color: '#002c45' }} />
-              </div>
-              <h3 className="text-2xl font-bold mb-3 text-gray-900">Գլխավոր խոհարար</h3>
-              <p className="text-gray-700 leading-relaxed">
-                15 տարվա փորձով Երևանու լավագույն ռեստորաններում: 
-                Գիտի կատարյալ խմորի և լցոնման գաղտնիքները:
-              </p>
-            </div>
-            
-            <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow text-center group">
-              <div className="w-32 h-32 rounded-full mx-auto mb-6 flex items-center justify-center group-hover:scale-105 transition-transform" style={{ backgroundColor: '#f3d98c' }}>
-                <Users className="h-16 w-16" style={{ color: '#002c45' }} />
-              </div>
-              <h3 className="text-2xl font-bold mb-3 text-gray-900">Մենեջեր</h3>
-              <p className="text-gray-700 leading-relaxed">
-                Ապահովում է գերազանց սպասարկում և սպասարկման որակ: 
-                Միշտ կօգնի ընտրության հարցում և կպատասխանի հարցերին:
-              </p>
-            </div>
-            
-          </div>
-        </div>
-
 
         {/* Statistics Section */}
         <section className="py-16 lg:py-20" style={{ backgroundColor: '#ffffff' }}>
