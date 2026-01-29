@@ -79,6 +79,7 @@ export function WishlistButton({
         
         if (response.ok) {
           setIsInWishlist(false)
+          window.dispatchEvent(new CustomEvent('wishlist-changed'))
         } else {
           console.error('Failed to remove from wishlist')
         }
@@ -94,6 +95,7 @@ export function WishlistButton({
         
         if (response.ok) {
           setIsInWishlist(true)
+          window.dispatchEvent(new CustomEvent('wishlist-changed'))
         } else {
           console.error('Failed to add to wishlist')
         }

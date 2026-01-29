@@ -27,6 +27,15 @@ export default function MobileBottomNav() {
     }
   }, [session])
 
+  // Обновление счётчика при добавлении/удалении из wishlist (событие из WishlistButton)
+  useEffect(() => {
+    const onWishlistChanged = () => {
+      if (session?.user?.id) fetchWishlistCount()
+    }
+    window.addEventListener('wishlist-changed', onWishlistChanged)
+    return () => window.removeEventListener('wishlist-changed', onWishlistChanged)
+  }, [session?.user?.id])
+
   const fetchWishlistCount = async () => {
     try {
       const response = await fetch('/api/wishlist')

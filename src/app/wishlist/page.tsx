@@ -87,6 +87,7 @@ function WishlistContent() {
       
       if (response.ok) {
         setWishlistItems(prev => prev.filter(item => item.productId !== productId))
+        window.dispatchEvent(new CustomEvent('wishlist-changed'))
       } else {
         console.error('Failed to remove from wishlist')
       }
