@@ -1,29 +1,34 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { 
-  Plus, 
-  Edit, 
-  Trash2, 
-  ArrowLeft,
-  Search,
-  Filter
-} from 'lucide-react'
+import { Plus, Edit, Trash2, Search, Filter, Tag } from 'lucide-react'
+import Pagination from '@/components/Pagination'
+import BulkActionsBar from '@/components/admin/BulkActionsBar'
+import ConfirmModal from '@/components/admin/ConfirmModal'
+
+const PAGE_SIZE = 10
 
 interface Category {
   id: string
   name: string
-  description?: string
-  image?: string
+  description?: string | null
+  image?: string | null
   sortOrder: number
   showInMainPage: boolean
   isActive: boolean
   createdAt: string
-  _count: {
-    products: number
+  updatedAt: string
+  _count: { products: number }
+}
+
+function formatDate(s: string) {
+  try {
+    return new Date(s).toLocaleDateString('hy-AM', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  } catch {
+    return '—'
   }
 }
 
@@ -32,223 +37,355 @@ export default function CategoriesPage() {
   const router = useRouter()
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [showInactive, setShowInactive] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false)
+  const [bulkDeleting, setBulkDeleting] = useState(false)
+  const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null)
+  const [singleDeleting, setSingleDeleting] = useState(false)
 
   useEffect(() => {
     if (status === 'loading') return
-
-    // Временно отключаем проверку авторизации для тестирования
-    // if (!session || session.user?.role !== 'ADMIN') {
-    //   router.push('/login')
-    //   return
-    // }
-
+    if (!session || session.user?.role !== 'ADMIN') {
+      router.push('/login')
+      return
+    }
     fetchCategories()
   }, [session, status, router])
 
   const fetchCategories = async () => {
+    setError(null)
+    setLoading(true)
     try {
       const response = await fetch('/api/admin/categories')
       if (response.ok) {
         const data = await response.json()
-        setCategories(data)
+        setCategories(Array.isArray(data) ? data : [])
+      } else {
+        setError('Բեռնումը ձախողվեց')
       }
-    } catch (error) {
-      console.error('Error fetching categories:', error)
+    } catch (err) {
+      console.error('Error fetching categories:', err)
+      setError('Սխալ է տեղի ունեցել')
     } finally {
       setLoading(false)
     }
   }
 
+  const filteredCategories = useMemo(() => {
+    return categories.filter((cat) => {
+      const matchSearch =
+        cat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (cat.description && cat.description.toLowerCase().includes(searchTerm.toLowerCase()))
+      const matchStatus = showInactive || cat.isActive
+      return matchSearch && matchStatus
+    })
+  }, [categories, searchTerm, showInactive])
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Вы уверены, что хотите удалить эту категорию?')) return
+  const totalPages = Math.max(1, Math.ceil(filteredCategories.length / PAGE_SIZE))
+  const paginatedCategories = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE
+    return filteredCategories.slice(start, start + PAGE_SIZE)
+  }, [filteredCategories, currentPage])
 
+  const handleSingleDeleteConfirm = async () => {
+    if (!categoryToDelete) return
+    setSingleDeleting(true)
     try {
-      const response = await fetch(`/api/admin/categories/${id}`, {
-        method: 'DELETE',
-      })
-
+      const response = await fetch(`/api/admin/categories/${categoryToDelete}`, { method: 'DELETE' })
       if (response.ok) {
+        setCategoryToDelete(null)
         await fetchCategories()
       } else {
-        const error = await response.json()
-        alert(error.error || 'Ошибка при удалении категории')
+        const err = await response.json()
+        alert(err.error || 'Ջնջելիս սխալ')
       }
-    } catch (error) {
-      console.error('Error deleting category:', error)
-      alert('Ошибка при удалении категории')
+    } catch (err) {
+      console.error('Error deleting category:', err)
+      alert('Ջնջելիս սխալ')
+    } finally {
+      setSingleDeleting(false)
     }
   }
 
+  const handleBulkDelete = async () => {
+    const ids = Array.from(selectedIds)
+    if (ids.length === 0) return
+    setBulkDeleting(true)
+    try {
+      const response = await fetch('/api/admin/categories/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids })
+      })
+      const data = await response.json().catch(() => ({}))
+      if (response.ok) {
+        if ((data.failed || []).length > 0) {
+          alert(`Ջնջվել է ${data.deleted}. Չհաջողված՝ ${data.failed.length} (օր. ապրանքներով կատեգորիա)։`)
+        }
+        setSelectedIds(new Set())
+        setBulkConfirmOpen(false)
+        fetchCategories()
+      } else {
+        alert(data.error || 'Սխալ')
+      }
+    } catch {
+      alert('Սխալ')
+    } finally {
+      setBulkDeleting(false)
+    }
+  }
 
-  const filteredCategories = categories.filter(category => {
-    const matchesSearch = category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (category.description && category.description.toLowerCase().includes(searchTerm.toLowerCase()))
-    const matchesStatus = showInactive || category.isActive
-    return matchesSearch && matchesStatus
-  })
+  const toggleSelectAll = () => {
+    if (selectedIds.size === paginatedCategories.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(paginatedCategories.map((c) => c.id)))
+    }
+  }
 
-  if (status === 'loading' || loading) {
+  const toggleSelectOne = (id: string) => {
+    const next = new Set(selectedIds)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    setSelectedIds(next)
+  }
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+    setSelectedIds(new Set())
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  if (status === 'loading' || (loading && categories.length === 0)) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#002c45' }}>
+      <div className="flex items-center justify-center py-24">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-t-transparent rounded-full animate-spin mx-auto mb-4" style={{ borderColor: '#f3d98c', borderTopColor: 'transparent' }}></div>
-          <p className="text-gray-600">Загружается...</p>
+          <div className="w-12 h-12 border-2 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-neutral-600">Բեռնվում է...</p>
         </div>
       </div>
     )
   }
 
+  if (!session || session.user?.role !== 'ADMIN') return null
+
+  const allSelected = paginatedCategories.length > 0 && selectedIds.size === paginatedCategories.length
+  const someSelected = selectedIds.size > 0
+
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#002c45' }}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
-        {/* Заголовок */}
-        <div className="mb-8">
-          <div className="flex items-center mb-4">
-            <Link
-              href="/admin"
-              className="mr-4 p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5 text-white" />
-            </Link>
-            <h1 className="text-3xl font-bold text-white">Управление категориями</h1>
+    <div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <h1 className="text-xl font-bold text-neutral-900">Կատեգորիաներ</h1>
+        <Link
+          href="/admin/categories/new"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-primary-500 text-white hover:bg-primary-600"
+        >
+          <Plus className="h-5 w-5" />
+          Ավելացնել կատեգորիա
+        </Link>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-4 mb-6">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+            <input
+              type="text"
+              placeholder="Փնտրել կատեգորիաներ..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-neutral-900 bg-white"
+            />
           </div>
-          <p className="text-gray-300">Создание и редактирование категорий товаров</p>
+          <button
+            type="button"
+            onClick={() => setShowInactive(!showInactive)}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${showInactive ? 'bg-primary-500 text-white border-primary-500' : 'bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-50'}`}
+          >
+            <Filter className="h-4 w-4" />
+            {showInactive ? 'Թաքցնել ոչ ակտիվ' : 'Ցուցադրել ոչ ակտիվ'}
+          </button>
+        </div>
+      </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 flex items-center justify-between gap-4">
+          <p className="text-red-800 font-medium">{error}</p>
+          <button
+            type="button"
+            onClick={fetchCategories}
+            className="px-4 py-2 bg-red-100 text-red-800 rounded-lg hover:bg-red-200 font-medium"
+          >
+            Կրկին փորձել
+          </button>
+        </div>
+      )}
+
+      <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden">
+        <div className="p-4 border-b border-neutral-200 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-semibold text-neutral-900">
+            Կատեգորիաներ ({filteredCategories.length})
+          </h2>
+          {totalPages > 1 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+              itemsPerPage={PAGE_SIZE}
+              totalItems={filteredCategories.length}
+              itemsLabel="կատեգորիայից"
+            />
+          )}
         </div>
 
-        {/* Панель управления */}
-        <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 mb-8 border border-white/20">
-          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-            <div className="flex flex-col md:flex-row gap-4 flex-1">
-              {/* Поиск */}
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder="Поиск категорий..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-white/20 border border-white/30 rounded-lg text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                />
-              </div>
+        {someSelected && (
+          <BulkActionsBar
+            selectedCount={selectedIds.size}
+            onClearSelection={() => setSelectedIds(new Set())}
+            onBulkDelete={() => setBulkConfirmOpen(true)}
+            deleteLabel="Խմբային ջնջում"
+            isLoading={bulkDeleting}
+          />
+        )}
 
-              {/* Фильтр */}
-              <button
-                onClick={() => setShowInactive(!showInactive)}
-                className={`flex items-center px-4 py-2 rounded-lg transition-colors ${
-                  showInactive 
-                    ? 'bg-orange-500 text-white' 
-                    : 'bg-white/20 text-white hover:bg-white/30'
-                }`}
-              >
-                <Filter className="w-4 h-4 mr-2" />
-                {showInactive ? 'Скрыть неактивные' : 'Показать неактивные'}
-              </button>
-            </div>
-
-            {/* Кнопка добавления */}
-            <Link
-              href="/admin/categories/new"
-              className="flex items-center px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Добавить категорию
-            </Link>
-          </div>
-        </div>
-
-        {/* Список категорий */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCategories.map((category) => (
-            <div
-              key={category.id}
-              className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 hover:bg-white/15 transition-all duration-300"
-            >
-              {/* Изображение категории */}
-              <div className="relative w-full h-32 mb-4 rounded-lg overflow-hidden">
-                {category.image && !category.image.startsWith('/images/') ? (
-                  // Используем обычный img для blob URLs (Next.js Image не работает с query параметрами в blob URLs)
-                  <img
-                    src={category.image}
-                    alt={category.name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none'
-                      const placeholder = e.currentTarget.nextElementSibling as HTMLElement
-                      if (placeholder) placeholder.style.display = 'flex'
-                    }}
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[800px]">
+            <thead className="bg-neutral-50 border-b border-neutral-200">
+              <tr>
+                <th className="px-3 py-2 text-left w-10">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={toggleSelectAll}
+                    className="rounded border-neutral-300 text-primary-500 focus:ring-primary-500"
+                    aria-label="Ընտրել բոլորը"
                   />
-                ) : null}
-                <div 
-                  className="w-full h-full bg-white/20 flex items-center justify-center text-4xl"
-                  style={{ display: (category.image && !category.image.startsWith('/images/')) ? 'none' : 'flex' }}
-                >
-                  🎯
-                </div>
-              </div>
-
-              {/* Информация о категории */}
-              <div className="mb-4">
-                <h3 className="text-xl font-semibold text-white mb-2">{category.name}</h3>
-                {category.description && (
-                  <p className="text-gray-300 text-sm mb-2 line-clamp-2">{category.description}</p>
-                )}
-                <div className="flex items-center justify-between text-sm text-gray-400">
-                  <span>Товаров: {category._count.products}</span>
-                  <span>Порядок: {category.sortOrder}</span>
-                </div>
-              </div>
-
-              {/* Статусы */}
-              <div className="flex flex-wrap gap-2 mb-4">
-                {category.showInMainPage && (
-                  <span className="px-2 py-1 bg-green-500/20 text-green-300 rounded-full text-xs border border-green-400/30">
-                    На главной
-                  </span>
-                )}
-                {category.isActive ? (
-                  <span className="px-2 py-1 bg-blue-500/20 text-blue-300 rounded-full text-xs border border-blue-400/30">
-                    Активна
-                  </span>
-                ) : (
-                  <span className="px-2 py-1 bg-red-500/20 text-red-300 rounded-full text-xs border border-red-400/30">
-                    Неактивна
-                  </span>
-                )}
-              </div>
-
-              {/* Действия */}
-              <div className="flex gap-2">
-                <Link
-                  href={`/admin/categories/${category.id}/edit`}
-                  className="flex-1 flex items-center justify-center px-3 py-2 bg-blue-500/20 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-colors border border-blue-400/30"
-                >
-                  <Edit className="w-4 h-4 mr-1" />
-                  Редактировать
-                </Link>
-                <button
-                  onClick={() => handleDelete(category.id)}
-                  className="flex-1 flex items-center justify-center px-3 py-2 bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500/30 transition-colors border border-red-400/30"
-                >
-                  <Trash2 className="w-4 h-4 mr-1" />
-                  Удалить
-                </button>
-              </div>
-            </div>
-          ))}
+                </th>
+                <th className="px-4 py-2 text-left text-xs font-semibold text-neutral-600 uppercase min-w-[160px]">Անուն</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Slug</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Ծնող</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Ապրանքներ</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Ստեղծվել է</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Թարմացվել է</th>
+                <th className="px-3 py-2 text-center text-xs font-semibold text-neutral-600 uppercase">Գործողություններ</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-neutral-200">
+              {paginatedCategories.map((category) => (
+                <tr key={category.id} className="hover:bg-neutral-50">
+                  <td className="px-3 py-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(category.id)}
+                      onChange={() => toggleSelectOne(category.id)}
+                      className="rounded border-neutral-300 text-primary-500 focus:ring-primary-500"
+                      aria-label={`Ընտրել ${category.name}`}
+                    />
+                  </td>
+                  <td className="px-4 py-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-10 h-10 bg-neutral-100 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0">
+                        {category.image && category.image.trim() !== '' ? (
+                          <img src={category.image} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <Tag className="h-5 w-5 text-neutral-400" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium text-neutral-900">{category.name}</div>
+                        {category.description && (
+                          <div className="text-xs text-neutral-500 line-clamp-1 mt-0.5">{category.description}</div>
+                        )}
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {category.showInMainPage && (
+                            <span className="px-2 py-0.5 bg-green-100 text-green-800 rounded text-xs font-medium">Գլխավոր</span>
+                          )}
+                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${category.isActive ? 'bg-green-100 text-green-800' : 'bg-neutral-200 text-neutral-600'}`}>
+                            {category.isActive ? 'Ակտիվ' : 'Ոչ ակտիվ'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-3 py-2 text-sm text-neutral-500">—</td>
+                  <td className="px-3 py-2 text-sm text-neutral-500">—</td>
+                  <td className="px-3 py-2 text-sm font-medium text-neutral-900">{category._count?.products ?? 0}</td>
+                  <td className="px-3 py-2 text-sm text-neutral-600">{formatDate(category.createdAt)}</td>
+                  <td className="px-3 py-2 text-sm text-neutral-600">{formatDate(category.updatedAt)}</td>
+                  <td className="px-3 py-2">
+                    <div className="flex items-center justify-center gap-1">
+                      <Link
+                        href={`/admin/categories/${category.id}/edit`}
+                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                        title="Խմբագրել"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => setCategoryToDelete(category.id)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                        title="Ջնջել"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
 
-        {filteredCategories.length === 0 && (
-          <div className="text-center py-12">
-            <div className="text-6xl mb-4">📂</div>
-            <h3 className="text-xl font-semibold text-white mb-2">Категории не найдены</h3>
-            <p className="text-gray-300">Попробуйте изменить параметры поиска или добавьте новую категорию</p>
+        {filteredCategories.length === 0 && !loading && (
+          <div className="text-center py-12 text-neutral-500">
+            <Tag className="h-12 w-12 mx-auto mb-4 text-neutral-300" />
+            <p className="text-lg font-medium">Կատեգորիաներ չեն գտնվել</p>
+            <p className="text-sm mt-1">Փոխեք փնտրումը կամ ավելացրեք նոր կատեգորիա</p>
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <div className="p-4 border-t border-neutral-200">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+              itemsPerPage={PAGE_SIZE}
+              totalItems={filteredCategories.length}
+              itemsLabel="կատեգորիայից"
+            />
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={bulkConfirmOpen}
+        onClose={() => !bulkDeleting && setBulkConfirmOpen(false)}
+        onConfirm={handleBulkDelete}
+        title="Խմբային ջնջում"
+        message={`Հեռացնել ${selectedIds.size} կատեգորիա։ Կատեգորիաներ, որոնց մեջ ապրանքներ կան, չեն ջնջվի։ Գործողությունը հնարավոր չէ հետարկել։`}
+        confirmLabel="Ջնջել"
+        cancelLabel="Չեղարկել"
+        variant="danger"
+        isLoading={bulkDeleting}
+      />
+
+      <ConfirmModal
+        isOpen={categoryToDelete !== null}
+        onClose={() => !singleDeleting && setCategoryToDelete(null)}
+        onConfirm={handleSingleDeleteConfirm}
+        title="Ջնջել կատեգորիան"
+        message="Կատեգորիան կհեռացվի։ Եթե դրանում ապրանքներ կան, ջնջումը չի կատարվի։ Գործողությունը հնարավոր չէ հետարկել։"
+        confirmLabel="Ջնջել"
+        cancelLabel="Չեղարկել"
+        variant="danger"
+        isLoading={singleDeleting}
+      />
     </div>
   )
 }

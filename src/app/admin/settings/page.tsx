@@ -3,10 +3,8 @@
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { Settings, Save, ArrowLeft, Image as ImageIcon } from 'lucide-react'
-import Link from 'next/link'
+import { Settings, Save, Image as ImageIcon } from 'lucide-react'
 import ImageUpload from '@/components/ImageUpload'
-import Footer from '@/components/Footer'
 
 interface SiteSettings {
   logo?: string
@@ -68,10 +66,10 @@ export default function AdminSettings() {
       )
 
       await Promise.all(promises)
-      setMessage({ type: 'success', text: 'Настройки успешно сохранены!' })
+      setMessage({ type: 'success', text: 'Կարգավորումները պահպանվել են։' })
     } catch (error) {
       console.error('Error saving settings:', error)
-      setMessage({ type: 'error', text: 'Ошибка при сохранении настроек' })
+      setMessage({ type: 'error', text: 'Պահպանելիս սխալ է տեղի ունեցել' })
     } finally {
       setIsSaving(false)
     }
@@ -92,45 +90,24 @@ export default function AdminSettings() {
 
   if (status === 'loading' || isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-t-transparent rounded-full animate-spin mx-auto mb-4" style={{ borderColor: '#f3d98c', borderTopColor: 'transparent' }}></div>
-          <p className="text-gray-600">Загрузка...</p>
-        </div>
+      <div className="flex items-center justify-center py-24">
+        <div className="w-12 h-12 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+        <p className="ml-3 text-neutral-600">Բեռնվում է...</p>
       </div>
     )
   }
 
-  if (!session || session.user?.role !== 'ADMIN') {
-    return null
-  }
+  if (!session || session.user?.role !== 'ADMIN') return null
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      
-      {/* Отступ для fixed хедера */}
-      <div className="lg:hidden h-20"></div>
-      <div className="hidden lg:block h-28"></div>
-      
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center mb-4">
-            <Link 
-              href="/admin" 
-              className="mr-4 p-2 text-gray-600 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-colors"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-                <Settings className="h-8 w-8 mr-3 text-orange-500" />
-                Настройки сайта
-              </h1>
-              <p className="text-gray-600">Управление логотипом и основными настройками</p>
-            </div>
-          </div>
-        </div>
+    <div>
+      <div className="mb-6">
+        <h1 className="text-xl font-bold text-neutral-900 flex items-center gap-2">
+          <Settings className="h-6 w-6 text-primary-500" />
+          Կայքի կարգավորումներ
+        </h1>
+        <p className="text-neutral-600 text-sm mt-1">Լոգո և հիմնական կարգավորումներ</p>
+      </div>
 
         {/* Message */}
         {message && (
@@ -143,22 +120,18 @@ export default function AdminSettings() {
           </div>
         )}
 
-        {/* Settings Form */}
-        <div className="bg-white rounded-2xl shadow-lg p-8">
-          <div className="space-y-8">
-            {/* Logo Section */}
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-                <ImageIcon className="h-6 w-6 mr-2 text-orange-500" />
-                Логотип сайта
-              </h2>
-              <p className="text-gray-600 mb-4">
-                Загрузите новый логотип для сайта. Рекомендуемый размер: 180x60px
-              </p>
-              
-              {/* Текущий логотип */}
-              <div className="mb-4">
-                <p className="text-sm font-medium text-gray-700 mb-2">Текущий логотип:</p>
+      <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6">
+        <div className="space-y-8">
+          <div>
+            <h2 className="text-lg font-semibold text-neutral-900 mb-4 flex items-center gap-2">
+              <ImageIcon className="h-5 w-5 text-primary-500" />
+              Կայքի լոգո
+            </h2>
+            <p className="text-neutral-600 text-sm mb-4">
+              Բեռնեք նոր լոգո։ Խորհուրդ է տրվում 180×60px
+            </p>
+            <div className="mb-4">
+              <p className="text-sm font-medium text-neutral-700 mb-2">Ընթացիկ լոգո</p>
                 <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
                   <img 
                     src={`${settings.logo || '/logo.png'}?v=${logoVersion}`}
@@ -190,10 +163,10 @@ export default function AdminSettings() {
                     console.log('Logo setting saved successfully')
                     setSettings(prev => ({ ...prev, logo: url }))
                     setLogoVersion(Date.now()) // Обновляем версию для обхода кэша
-                    setMessage({ type: 'success', text: 'Логотип успешно обновлен!' })
+                    setMessage({ type: 'success', text: 'Լոգոն թարմացվել է։' })
                   } catch (err) {
                     console.error('Failed to save logo setting', err)
-                    setMessage({ type: 'error', text: 'Ошибка при сохранении логотипа' })
+                    setMessage({ type: 'error', text: 'Լոգոն պահպանելիս սխալ' })
                   }
                 }}
                 onImageRemove={() => {
@@ -205,108 +178,76 @@ export default function AdminSettings() {
               />
             </div>
 
-            {/* Site Information */}
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                Информация о сайте
-              </h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Название сайта
-                  </label>
-                  <input
-                    type="text"
-                    value={settings.siteName || ''}
-                    onChange={(e) => updateSetting('siteName', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                    placeholder="Pideh Armenia"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Телефон
-                  </label>
-                  <input
-                    type="tel"
-                    value={settings.contactPhone || ''}
-                    onChange={(e) => updateSetting('contactPhone', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                    placeholder="+374 XX XXX XXX"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={settings.contactEmail || ''}
-                    onChange={(e) => updateSetting('contactEmail', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                    placeholder="info@pideh.am"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Адрес
-                  </label>
-                  <input
-                    type="text"
-                    value={settings.address || ''}
-                    onChange={(e) => updateSetting('address', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                    placeholder="Ереван, Армения"
-                  />
-                </div>
+          <div>
+            <h2 className="text-lg font-semibold text-neutral-900 mb-4">Կայքի տեղեկություն</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-2">Կայքի անուն</label>
+                <input
+                  type="text"
+                  value={settings.siteName || ''}
+                  onChange={(e) => updateSetting('siteName', e.target.value)}
+                  className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  placeholder="WelcomeBaby"
+                />
               </div>
-
-              <div className="mt-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Описание сайта
-                </label>
-                <textarea
-                  value={settings.siteDescription || ''}
-                  onChange={(e) => updateSetting('siteDescription', e.target.value)}
-                  rows={3}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                  placeholder="Описание вашего бизнеса..."
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-2">Հեռախոս</label>
+                <input
+                  type="tel"
+                  value={settings.contactPhone || ''}
+                  onChange={(e) => updateSetting('contactPhone', e.target.value)}
+                  className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  placeholder="+374 XX XXX XXX"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-2">Email</label>
+                <input
+                  type="email"
+                  value={settings.contactEmail || ''}
+                  onChange={(e) => updateSetting('contactEmail', e.target.value)}
+                  className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  placeholder="info@example.am"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-2">Հասցե</label>
+                <input
+                  type="text"
+                  value={settings.address || ''}
+                  onChange={(e) => updateSetting('address', e.target.value)}
+                  className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  placeholder="Երևան, Հայաստան"
                 />
               </div>
             </div>
-          </div>
-
-          {/* Save Button */}
-          <div className="mt-8 pt-6 border-t border-gray-200">
-            <button
-              onClick={saveSettings}
-              disabled={isSaving}
-              className={`
-                flex items-center px-6 py-3 rounded-lg font-semibold transition-all duration-300
-                ${isSaving
-                  ? 'bg-gray-400 text-white cursor-not-allowed'
-                  : 'bg-orange-500 text-white hover:bg-orange-600 hover:shadow-lg'
-                }
-              `}
-            >
-              {isSaving ? (
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-              ) : (
-                <Save className="h-5 w-5 mr-2" />
-              )}
-              {isSaving ? 'Сохранение...' : 'Сохранить настройки'}
-            </button>
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-neutral-700 mb-2">Կայքի նկարագրություն</label>
+              <textarea
+                value={settings.siteDescription || ''}
+                onChange={(e) => updateSetting('siteDescription', e.target.value)}
+                rows={3}
+                className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                placeholder="Նկարագրություն..."
+              />
+            </div>
           </div>
         </div>
-      </div>
-      
-      {/* Hide Footer on Mobile and Tablet */}
-      <div className="hidden lg:block">
-        <Footer />
+        <div className="mt-6 pt-6 border-t border-neutral-200">
+          <button
+            onClick={saveSettings}
+            disabled={isSaving}
+            className="inline-flex items-center px-5 py-2.5 rounded-xl font-medium bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50"
+          >
+            {isSaving ? (
+              <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+            ) : (
+              <Save className="h-5 w-5 mr-2" />
+            )}
+            {isSaving ? 'Պահպանվում է...' : 'Պահպանել'}
+          </button>
+        </div>
       </div>
     </div>
   )

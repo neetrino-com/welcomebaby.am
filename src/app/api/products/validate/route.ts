@@ -16,7 +16,8 @@ export async function POST(request: NextRequest) {
     const existingProducts = await prisma.product.findMany({
       where: { 
         id: { in: productIds },
-        isAvailable: true 
+        isAvailable: true,
+        published: true
       },
       select: { id: true }
     })

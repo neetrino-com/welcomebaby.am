@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
     const products = await prisma.product.findMany({
       where: {
         isAvailable: true,
+        published: true,
         OR: [
           { name: { contains: searchQuery, mode: 'insensitive' } },
           { description: { contains: searchQuery, mode: 'insensitive' } },

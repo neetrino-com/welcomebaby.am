@@ -7,6 +7,7 @@ export async function GET(request: NextRequest) {
     const products = await prisma.product.findMany({
       where: {
         isAvailable: true,
+        published: true,
         status: 'BANNER'
       },
       orderBy: { createdAt: 'desc' },

@@ -1,485 +1,86 @@
 'use client'
 
-import { useSession, getSession, signOut } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Clock,
-  CheckCircle,
-  XCircle,
-  Package,
-  ArrowLeft,
-  Edit,
-  Trash2,
-  LogOut
-} from 'lucide-react'
-import Footer from '@/components/Footer'
-import EditProfileModal from '@/components/EditProfileModal'
-import DeleteAccountModal from '@/components/DeleteAccountModal'
-import { formatPrice } from '@/utils/priceUtils'
+import { User, Package, Settings, ArrowRight } from 'lucide-react'
 
-interface Order {
-  id: string
-  status: string
-  total: number
-  createdAt: string
-  items: Array<{
-    product: {
-      name: string
-      image: string
-    }
-    quantity: number
-    price: number
-  }>
-}
-
-export default function ProfilePage() {
-  const { data: session, status } = useSession()
-  const router = useRouter()
-  const [orders, setOrders] = useState<Order[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
-  const [isDeletingAccount, setIsDeletingAccount] = useState(false)
-  const [userProfile, setUserProfile] = useState({
-    name: session?.user?.name || null,
-    email: session?.user?.email || null,
-    phone: null as string | null,
-    address: null as string | null
-  })
+export default function ProfileDashboardPage() {
+  const { data: session } = useSession()
+  const [ordersCount, setOrdersCount] = useState<number | null>(null)
 
   useEffect(() => {
-    if (status === 'loading') return
-
-    if (!session) {
-      router.push('/login')
-      return
-    }
-
-    fetchOrders()
-    fetchUserProfile()
-  }, [session, status, router])
-
-  useEffect(() => {
-    if (session?.user) {
-      setUserProfile(prev => ({
-        ...prev,
-        name: session.user?.name || null,
-        email: session.user?.email || null
-      }))
+    if (session?.user?.id) {
+      fetch('/api/orders?page=1&pageSize=1')
+        .then((res) => (res.ok ? res.json() : {}))
+        .then((data: { totalCount?: number }) => setOrdersCount(data.totalCount ?? 0))
+        .catch(() => setOrdersCount(0))
     }
   }, [session])
 
-  const fetchOrders = async () => {
-    try {
-      const response = await fetch('/api/orders')
-      if (response.ok) {
-        const data = await response.json()
-        setOrders(data)
-      }
-    } catch (error) {
-      console.error('Error fetching orders:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  if (!session) return null
 
-  const fetchUserProfile = async () => {
-    try {
-      const response = await fetch('/api/user/profile')
-      if (response.ok) {
-        const data = await response.json()
-        setUserProfile(prev => ({
-          ...prev,
-          name: data.name,
-          phone: data.phone,
-          address: data.address
-        }))
-      }
-    } catch (error) {
-      console.error('Error fetching user profile:', error)
-    }
-  }
-
-  const handleSaveProfile = async (data: { name: string; phone: string; address: string }) => {
-    try {
-      const response = await fetch('/api/user/profile', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      })
-
-      if (response.ok) {
-        const updatedProfile = await response.json()
-        setUserProfile(prev => ({
-          ...prev,
-          name: updatedProfile.name,
-          phone: updatedProfile.phone,
-          address: updatedProfile.address
-        }))
-      } else {
-        throw new Error('Failed to update profile')
-      }
-    } catch (error) {
-      console.error('Error updating profile:', error)
-      throw error
-    }
-  }
-
-  const handleDeleteAccount = async () => {
-    setIsDeletingAccount(true)
-    
-    try {
-      console.log('🔄 Starting account deletion...')
-      
-      const response = await fetch('/api/user/delete', {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
-
-      if (response.ok) {
-        console.log('✅ Account deleted successfully')
-        
-        // Выходим из системы и перенаправляем на страницу подтверждения
-        const { signOut } = await import('next-auth/react')
-        
-        // Выходим из системы с перенаправлением на страницу подтверждения
-        await signOut({ callbackUrl: '/account-deleted' })
-        
-        // Принудительно обновляем сессию после выхода
-        await getSession()
-        
-        // Перенаправляем на страницу подтверждения
-        window.location.href = '/account-deleted'
-        
-        console.log('✅ Signed out successfully')
-      } else {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to delete account')
-      }
-    } catch (error) {
-      console.error('❌ Error deleting account:', error)
-      setIsDeletingAccount(false)
-      throw error
-    }
-  }
-
-  const getStatusInfo = (status: string) => {
-    switch (status) {
-      case 'PENDING':
-        return { text: 'Սպասում է հաստատման', color: 'text-yellow-600', bg: 'bg-yellow-100' }
-      case 'CONFIRMED':
-        return { text: 'Հաստատված', color: 'text-blue-600', bg: 'bg-blue-100' }
-      case 'PREPARING':
-        return { text: 'Պատրաստվում է', color: 'text-[#f3d98c]', bg: 'bg-[#f3d98c]/10' }
-      case 'READY':
-        return { text: 'Պատրաստ է հանձնման', color: 'text-purple-600', bg: 'bg-purple-100' }
-      case 'DELIVERED':
-        return { text: 'Առաքված', color: 'text-green-600', bg: 'bg-green-100' }
-      case 'CANCELLED':
-        return { text: 'Չեղարկված', color: 'text-red-600', bg: 'bg-red-100' }
-      default:
-        return { text: status, color: 'text-gray-600', bg: 'bg-gray-100' }
-    }
-  }
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'PENDING':
-        return <Clock className="h-4 w-4" />
-      case 'CONFIRMED':
-      case 'PREPARING':
-      case 'READY':
-        return <Package className="h-4 w-4" />
-      case 'DELIVERED':
-        return <CheckCircle className="h-4 w-4" />
-      case 'CANCELLED':
-        return <XCircle className="h-4 w-4" />
-      default:
-        return <Clock className="h-4 w-4" />
-    }
-  }
-
-  if (status === 'loading' || isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center relative" style={{ backgroundColor: '#ffffff' }}>
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-t-transparent rounded-full animate-spin mx-auto mb-4" style={{ borderColor: '#f3d98c', borderTopColor: 'transparent' }}></div>
-          <p className="text-white text-lg">Բեռնվում է...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (!session) {
-    return null
-  }
+  const cards = [
+    {
+      href: '/profile/orders',
+      label: 'Պատվերներ',
+      description: ordersCount !== null ? `${ordersCount} պատվեր` : 'Բեռնվում է...',
+      icon: Package,
+      accent: 'bg-amber-100 text-[#002c45]',
+    },
+    {
+      href: '/profile/personal-information',
+      label: 'Անձնական տվյալներ',
+      description: 'Անուն, հեռախոս, հասցե',
+      icon: User,
+      accent: 'bg-amber-100 text-[#002c45]',
+    },
+    {
+      href: '/profile/settings',
+      label: 'Կարգավորումներ',
+      description: 'Ելք, ջնջել հաշիվ',
+      icon: Settings,
+      accent: 'bg-neutral-100 text-neutral-700',
+    },
+  ]
 
   return (
-    <div className="min-h-screen relative" style={{ backgroundColor: '#ffffff' }}>
-      
-      {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200">
-        <div className="flex items-center justify-between px-4 py-3 h-16">
-          <Link 
-            href="/"
-            className="flex items-center text-gray-600 hover:text-[#f3d98c] transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5 mr-2" />
-            Վերադառնալ
-          </Link>
-          <h1 className="text-lg font-semibold text-gray-900">Պրոֆիլ</h1>
-          <div className="w-20"></div> {/* Spacer for centering */}
-        </div>
+    <div className="p-6 sm:p-8">
+      <div className="mb-8">
+        <p className="text-sm text-neutral-500 mb-1">Իմ հաշիվ</p>
+        <h1 className="text-2xl font-bold text-neutral-900">
+          Բարի գալուստ, {session.user?.name || 'Օգտատեր'}
+        </h1>
+        <p className="mt-2 text-neutral-600">
+          Կառավարեք ձեր պատվերները և անձնական տվյալները։
+        </p>
       </div>
-      
-      {/* Отступ для fixed хедера */}
-      <div className="lg:hidden h-20"></div>
-      <div className="hidden lg:block h-28"></div>
-      
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-20 lg:pt-32 lg:pb-8">
-        {/* Mobile Profile Card */}
-        <div className="lg:hidden mb-6">
-          
-          {/* Mobile Profile Card */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-            <div className="flex items-center space-x-4 mb-4">
-              <div className="w-16 h-16 bg-[#f3d98c] rounded-full flex items-center justify-center">
-                <User className="h-8 w-8 text-white" />
-              </div>
-              <div className="flex-1">
-                <h2 className="text-lg font-bold text-gray-900">{userProfile.name || 'Օգտատեր'}</h2>
-                <p className="text-sm text-gray-600">{userProfile.email}</p>
-              </div>
-              <button 
-                onClick={() => setIsEditModalOpen(true)}
-                className="p-2 text-[#f3d98c] hover:bg-[#f3d98c]/10 rounded-full transition-colors"
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {cards.map((item) => {
+          const Icon = item.icon
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="group flex items-start gap-4 p-5 rounded-xl border border-neutral-200 bg-white hover:border-amber-200 hover:shadow-md transition-all duration-200"
+            >
+              <span
+                className={`flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center ${item.accent}`}
               >
-                <Edit className="h-5 w-5" />
-              </button>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4 text-sm mb-4">
-              <div className="flex items-center space-x-2">
-                <Phone className="h-4 w-4 text-gray-400" />
-                <span className="text-gray-600">{userProfile.phone || 'Չի նշված'}</span>
+                <Icon className="h-5 w-5" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <span className="font-semibold text-neutral-900 group-hover:text-[#002c45]">
+                  {item.label}
+                </span>
+                <p className="text-sm text-neutral-500 mt-0.5">{item.description}</p>
               </div>
-              <div className="flex items-center space-x-2">
-                <MapPin className="h-4 w-4 text-gray-400" />
-                <span className="text-gray-600 truncate">{userProfile.address || 'Չի նշված'}</span>
-              </div>
-            </div>
-            
-            {/* Mobile Logout Button */}
-            <button
-              onClick={() => signOut({ callbackUrl: '/' })}
-              className="w-full text-gray-600 text-sm py-2 rounded-lg font-normal hover:text-[#f3d98c] hover:bg-[#f3d98c]/10 transition-all duration-200 flex items-center justify-center space-x-1 border border-gray-200 hover:border-[#f3d98c]/30 mb-2"
-            >
-              <LogOut className="h-3 w-3" />
-              <span>Ելք հաշվից</span>
-            </button>
-            
-            {/* Mobile Delete Account Button */}
-            <button
-              onClick={() => setIsDeleteModalOpen(true)}
-              className="w-full text-gray-400 text-sm py-2 rounded-lg font-normal hover:text-red-500 hover:bg-red-50 transition-all duration-200 flex items-center justify-center space-x-1 border border-gray-200 hover:border-red-200"
-            >
-              <Trash2 className="h-3 w-3" />
-              <span>Ջնջել հաշիվը</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Desktop Header */}
-        <div className="hidden lg:flex items-center space-x-4 mb-8">
-          <Link 
-            href="/"
-            className="flex items-center text-gray-700 hover:text-[#f3d98c] transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5 mr-2" />
-            Գլխավոր
-          </Link>
-          <div className="h-8 w-px bg-gray-300"></div>
-          <h1 className="text-3xl font-bold text-gray-900">Իմ պրոֆիլը</h1>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
-          {/* Profile Info - Desktop Only */}
-          <div className="hidden lg:block lg:col-span-1">
-            <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">Պրոֆիլի մասին տեղեկություն</h2>
-              
-              <div className="space-y-4">
-                <div className="flex items-center space-x-3">
-                  <User className="h-5 w-5 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-500">Անուն</p>
-                    <p className="font-medium text-gray-900">{userProfile.name || 'Չի նշված'}</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-3">
-                  <Mail className="h-5 w-5 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-500">Էլ. փոստ</p>
-                    <p className="font-medium text-gray-900">{userProfile.email}</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-3">
-                  <Phone className="h-5 w-5 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-500">Հեռախոս</p>
-                    <p className="font-medium text-gray-900">{userProfile.phone || 'Չի նշված'}</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-3">
-                  <MapPin className="h-5 w-5 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-500">Հասցե</p>
-                    <p className="font-medium text-gray-900">{userProfile.address || 'Չի նշված'}</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="space-y-3 mt-6">
-                <button 
-                  onClick={() => setIsEditModalOpen(true)}
-                  className="w-full text-gray-900 py-3 rounded-xl font-semibold transition-colors flex items-center justify-center"
-                  style={{ backgroundColor: '#f3d98c' }}
-                >
-                  <Edit className="h-5 w-5 mr-2" />
-                  Խմբագրել պրոֆիլը
-                </button>
-                
-                <button
-                  onClick={() => signOut({ callbackUrl: '/' })}
-                  className="w-full text-gray-600 text-sm py-2 rounded-lg font-normal hover:text-gray-900 hover:bg-gray-50 transition-all duration-200 flex items-center justify-center space-x-1 border border-gray-200 hover:border-gray-300 mb-2"
-                >
-                  <LogOut className="h-3 w-3" />
-                  <span>Ելք հաշվից</span>
-                </button>
-                
-                <button
-                  onClick={() => setIsDeleteModalOpen(true)}
-                  className="w-full text-gray-400 text-sm py-2 rounded-lg font-normal hover:text-red-500 hover:bg-red-50 transition-all duration-200 flex items-center justify-center space-x-1 border border-gray-200 hover:border-red-300"
-                >
-                  <Trash2 className="h-3 w-3" />
-                  <span>Ջնջել հաշիվը</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Orders History */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-2xl shadow-lg p-4 md:p-6 border border-gray-200">
-              <h2 className="text-lg md:text-xl font-semibold text-gray-900 mb-4 md:mb-6">Պատվերների պատմություն</h2>
-              
-              {orders.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">
-                  <Package className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                  <p>Դուք դեռ պատվերներ չունեք</p>
-                  <Link 
-                    href="/products"
-                    className="inline-block mt-4 text-gray-900 px-6 py-3 rounded-lg transition-colors"
-                    style={{ backgroundColor: '#f3d98c' }}
-                  >
-                    Պատվիրել
-                  </Link>
-                </div>
-              ) : (
-                <div className="space-y-3 md:space-y-4">
-                  {orders.map((order) => {
-                    const statusInfo = getStatusInfo(order.status)
-                    return (
-                      <div key={order.id} className="border border-gray-200 rounded-xl p-3 md:p-4 bg-gray-50">
-                        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-3 md:mb-4">
-                          <div className="mb-2 md:mb-0">
-                            <h3 className="font-semibold text-gray-900 text-sm md:text-base">Պատվեր #{order.id.slice(-8)}</h3>
-                            <p className="text-xs md:text-sm text-gray-500">
-                              {new Date(order.createdAt).toLocaleDateString('ru-RU', {
-                                year: 'numeric',
-                                month: 'short',
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })}
-                            </p>
-                          </div>
-                          <div className="flex items-center justify-between md:flex-col md:items-end">
-                            <p className="text-base md:text-lg font-bold text-gray-900">{formatPrice(order.total)} ֏</p>
-                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${statusInfo.bg} ${statusInfo.color}`}>
-                              {getStatusIcon(order.status)}
-                              <span className="ml-1">{statusInfo.text}</span>
-                            </span>
-                          </div>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          {order.items.map((item, index) => (
-                            <div key={index} className="flex items-center space-x-2 md:space-x-3">
-                              <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0"
-                                style={{ backgroundColor: '#f3d98c' + '20' }}>
-                                {item.product.image ? (
-                                  <img 
-                                    src={item.product.image} 
-                                    alt={item.product.name}
-                                    className="w-full h-full object-cover"
-                                  />
-                                ) : (
-                                  <Package className="h-5 w-5 md:h-6 md:w-6"
-                                    style={{ color: '#f3d98c' }} />
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="font-medium text-gray-900 text-sm md:text-base truncate">{item.product.name}</p>
-                                <p className="text-xs md:text-sm text-gray-500">{item.quantity} հատ × {formatPrice(item.price)} ֏</p>
-                              </div>
-                              <p className="font-semibold text-gray-900 text-sm md:text-base flex-shrink-0">{formatPrice(item.quantity * item.price)} ֏</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+              <ArrowRight className="h-5 w-5 text-neutral-300 group-hover:text-[#002c45] flex-shrink-0 mt-0.5" />
+            </Link>
+          )
+        })}
       </div>
-      
-      {/* Hide Footer on Mobile and Tablet */}
-      <div className="hidden lg:block">
-        <Footer />
-      </div>
-      
-      {/* Edit Profile Modal */}
-      <EditProfileModal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        user={userProfile}
-        onSave={handleSaveProfile}
-      />
-      
-      {/* Delete Account Modal */}
-      <DeleteAccountModal
-        isOpen={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
-        onConfirm={handleDeleteAccount}
-        isLoading={isDeletingAccount}
-      />
     </div>
   )
 }

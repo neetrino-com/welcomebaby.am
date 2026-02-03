@@ -1,17 +1,16 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Order, OrderItem, User } from '@/types'
 import { Button } from '@/components/ui/button'
-import { 
-  Search, 
-  Filter, 
-  Eye, 
-  RefreshCw, 
-  ArrowLeft, 
-  ChevronRight, 
+import {
+  Search,
+  Eye,
+  RefreshCw,
+  ChevronRight,
   Calendar,
   User as UserIcon,
   Phone,
@@ -24,12 +23,12 @@ import {
   Truck,
   CheckSquare,
   ShoppingCart,
-  DollarSign,
-  Download,
-  Printer
+  DollarSign
 } from 'lucide-react'
-import Link from 'next/link'
-import Footer from '@/components/Footer'
+import Pagination from '@/components/Pagination'
+import AdminTabs from '@/components/admin/AdminTabs'
+import BulkActionsBar from '@/components/admin/BulkActionsBar'
+import ConfirmModal from '@/components/admin/ConfirmModal'
 
 interface OrderWithDetails extends Order {
   user: User
@@ -81,14 +80,24 @@ const statusBorderColors = {
   CANCELLED: 'border-red-300'
 }
 
-const statusLabels = {
-  PENDING: 'Ожидает',
-  CONFIRMED: 'Подтвержден',
-  PREPARING: 'Готовится',
-  READY: 'Готов',
-  DELIVERED: 'Доставлен',
-  CANCELLED: 'Отменен'
+const statusLabels: Record<string, string> = {
+  PENDING: 'Սպասում',
+  CONFIRMED: 'Հաստատված',
+  PREPARING: 'Պատրաստվում',
+  READY: 'Պատրաստ',
+  DELIVERED: 'Առաքված',
+  CANCELLED: 'Չեղարկված'
 }
+
+const ORDER_TABS = [
+  { value: '', label: 'Բոլորը' },
+  { value: 'PENDING', label: 'Սպասում' },
+  { value: 'CONFIRMED', label: 'Հաստատված' },
+  { value: 'PREPARING', label: 'Պատրաստվում' },
+  { value: 'READY', label: 'Պատրաստ' },
+  { value: 'DELIVERED', label: 'Առաքված' },
+  { value: 'CANCELLED', label: 'Չեղարկված' }
+]
 
 export default function AdminOrdersPage() {
   const { data: session, status } = useSession()
@@ -101,6 +110,9 @@ export default function AdminOrdersPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedOrder, setSelectedOrder] = useState<OrderWithDetails | null>(null)
   const [showModal, setShowModal] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false)
+  const [bulkDeleting, setBulkDeleting] = useState(false)
   const [stats, setStats] = useState({
     totalOrders: 0,
     pendingOrders: 0,
@@ -171,15 +183,70 @@ export default function AdminOrdersPage() {
     setShowModal(true)
   }
 
-  // Закрываем модальное окно
-  const closeModal = () => {
+  const closeModal = useCallback(() => {
     setShowModal(false)
     setSelectedOrder(null)
-  }
+  }, [])
+
+  // Portal: lock body scroll and ESC when order details modal is open
+  useEffect(() => {
+    if (!showModal) return
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') closeModal() }
+    document.addEventListener('keydown', handleEsc)
+    return () => {
+      document.body.style.overflow = prevOverflow
+      document.removeEventListener('keydown', handleEsc)
+    }
+  }, [showModal, closeModal])
 
   useEffect(() => {
     fetchOrders()
   }, [currentPage, statusFilter])
+
+  const handleBulkDelete = async () => {
+    const ids = Array.from(selectedIds)
+    if (ids.length === 0) return
+    setBulkDeleting(true)
+    try {
+      const response = await fetch('/api/admin/orders/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids })
+      })
+      const data = await response.json().catch(() => ({}))
+      if (response.ok) {
+        if ((data.failed || []).length > 0) {
+          alert(`Ջնջվել է ${data.deleted}. Չհաջողված՝ ${data.failed.length}.`)
+        }
+        setSelectedIds(new Set())
+        setBulkConfirmOpen(false)
+        fetchOrders()
+      } else {
+        alert(data.error || 'Սխալ')
+      }
+    } catch (error) {
+      alert('Սխալ')
+    } finally {
+      setBulkDeleting(false)
+    }
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredOrders.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(filteredOrders.map((o) => o.id)))
+    }
+  }
+
+  const toggleSelectOne = (id: string) => {
+    const next = new Set(selectedIds)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    setSelectedIds(next)
+  }
 
   // Изменяем статус заказа
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
@@ -242,400 +309,299 @@ export default function AdminOrdersPage() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-orange-500" />
-          <p className="text-gray-600">Загрузка заказов...</p>
-        </div>
+      <div className="flex items-center justify-center py-24">
+        <RefreshCw className="h-8 w-8 animate-spin text-primary-500" />
+        <p className="ml-3 text-neutral-600">Բեռնվում է...</p>
       </div>
     )
   }
 
-  if (!session || session.user.role !== 'ADMIN') {
-    return null
-  }
+  if (!session || session.user.role !== 'ADMIN') return null
+
+  const allSelected = filteredOrders.length > 0 && selectedIds.size === filteredOrders.length
+  const someSelected = selectedIds.size > 0
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      
-      {/* Отступ для fixed хедера */}
-      <div className="lg:hidden h-20"></div>
-      <div className="hidden lg:block h-28"></div>
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center space-x-4">
-            <Link 
-              href="/admin"
-              className="flex items-center text-gray-600 hover:text-orange-500 transition-colors"
-            >
-              <ArrowLeft className="h-5 w-5 mr-2" />
-              Назад к админке
-            </Link>
-            <div className="h-8 w-px bg-gray-300"></div>
-            <h1 className="text-3xl font-bold text-gray-900">Управление заказами</h1>
-          </div>
-          
-          <div className="flex items-center space-x-3">
-            <Button 
-              onClick={fetchOrders} 
-              variant="outline" 
-              className="flex items-center gap-2"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Обновить
-            </Button>
-            <Button className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600">
-              <Download className="h-4 w-4" />
-              Экспорт
-            </Button>
-          </div>
-        </div>
+    <div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <h1 className="text-xl font-bold text-neutral-900">Պատվերներ</h1>
+        <Button onClick={fetchOrders} variant="outline" className="flex items-center gap-2">
+          <RefreshCw className="h-4 w-4" />
+          Թարմացնել
+        </Button>
+      </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-2xl shadow-lg p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Всего заказов</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.totalOrders}</p>
-              </div>
-              <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
-                <ShoppingCart className="h-6 w-6 text-orange-500" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-lg p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Ожидают</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.pendingOrders}</p>
-              </div>
-              <div className="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
-                <Clock className="h-6 w-6 text-yellow-500" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-lg p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Завершены</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.completedOrders}</p>
-              </div>
-              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                <CheckCircle className="h-6 w-6 text-green-500" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-lg p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Выручка</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.totalRevenue.toLocaleString()} ֏</p>
-              </div>
-              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                <DollarSign className="h-6 w-6 text-purple-500" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-5">
+          <div className="flex items-center justify-between">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Search className="inline h-4 w-4 mr-1" />
-                Поиск
-              </label>
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-4 py-3 bg-white border-2 border-gray-500 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors text-gray-900 font-medium"
-                placeholder="Поиск по имени, email, телефону или ID..."
-              />
+              <p className="text-sm font-medium text-neutral-600">Բոլոր պատվերները</p>
+              <p className="text-2xl font-bold text-neutral-900">{stats.totalOrders}</p>
             </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Filter className="inline h-4 w-4 mr-1" />
-                Статус
-              </label>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full px-4 py-3 bg-white border-2 border-gray-500 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors text-gray-900 font-medium"
-              >
-                <option value="">Все статусы</option>
-                <option value="PENDING">Ожидает</option>
-                <option value="CONFIRMED">Подтвержден</option>
-                <option value="PREPARING">Готовится</option>
-                <option value="READY">Готов</option>
-                <option value="DELIVERED">Доставлен</option>
-                <option value="CANCELLED">Отменен</option>
-              </select>
+            <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+              <ShoppingCart className="h-5 w-5 text-orange-500" />
             </div>
           </div>
         </div>
-
-        {/* Orders List */}
-        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-          <div className="p-6 border-b border-gray-300">
-            <h2 className="text-xl font-semibold text-gray-900">
-              Заказы ({filteredOrders.length})
-            </h2>
+        <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-neutral-600">Սպասող</p>
+              <p className="text-2xl font-bold text-neutral-900">{stats.pendingOrders}</p>
+            </div>
+            <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+              <Clock className="h-5 w-5 text-yellow-500" />
+            </div>
           </div>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-neutral-600">Ավարտված</p>
+              <p className="text-2xl font-bold text-neutral-900">{stats.completedOrders}</p>
+            </div>
+            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+              <CheckCircle className="h-5 w-5 text-green-500" />
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-neutral-600">Եկամուտ</p>
+              <p className="text-2xl font-bold text-neutral-900">{stats.totalRevenue.toLocaleString()} ֏</p>
+            </div>
+            <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+              <DollarSign className="h-5 w-5 text-purple-500" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-4 mb-6">
+        <label className="block text-sm font-medium text-neutral-700 mb-2">
+          <Search className="inline h-4 w-4 mr-1" />
+          Փնտրել
+        </label>
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full max-w-md px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+          placeholder="Անուն, email, հեռախոս կամ ID..."
+        />
+      </div>
+
+      <AdminTabs
+        tabs={ORDER_TABS}
+        activeValue={statusFilter}
+        onChange={(v) => { setStatusFilter(v); setCurrentPage(1); setSelectedIds(new Set()) }}
+        className="mb-4"
+      />
+
+      <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden">
+        <div className="p-4 border-b border-neutral-200 flex items-center justify-between flex-wrap gap-2">
+          <h2 className="text-lg font-semibold text-neutral-900">Պատվերներ ({pagination.total})</h2>
+          {pagination.pages > 1 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={pagination.pages}
+              onPageChange={(p) => { setCurrentPage(p); setSelectedIds(new Set()) }}
+              itemsPerPage={pagination.limit}
+              totalItems={pagination.total}
+              itemsLabel="պատվերից"
+            />
+          )}
+        </div>
+
+        {someSelected && (
+          <BulkActionsBar
+            selectedCount={selectedIds.size}
+            onClearSelection={() => setSelectedIds(new Set())}
+            onBulkDelete={() => setBulkConfirmOpen(true)}
+            deleteLabel="Խմբային ջնջում"
+            isLoading={bulkDeleting}
+          />
+        )}
+
+        {filteredOrders.length > 0 && (
+          <div className="flex items-center gap-2 px-4 py-2 bg-neutral-50 border-b border-neutral-200">
+            <input
+              type="checkbox"
+              checked={allSelected}
+              onChange={toggleSelectAll}
+              className="rounded border-neutral-300 text-primary-500"
+              aria-label="Ընտրել բոլորը"
+            />
+            <span className="text-sm text-neutral-600">Ընտրել բոլորը</span>
+          </div>
+        )}
           
-          <div className="divide-y divide-gray-200">
+          <div className="divide-y divide-neutral-200">
             {filteredOrders.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">
-                <ShoppingCart className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                <p className="text-lg">Заказы не найдены</p>
+              <div className="text-center py-12 text-neutral-500">
+                <ShoppingCart className="h-12 w-12 mx-auto mb-4 text-neutral-300" />
+                <p className="text-lg">Պատվերներ չեն գտնվել</p>
                 <p className="text-sm mt-2">
-                  {searchTerm || statusFilter 
-                    ? 'Попробуйте изменить фильтры поиска'
-                    : 'Пока нет заказов'
-                  }
+                  {searchTerm || statusFilter ? 'Փոխեք ֆիլտրերը' : 'Դեռ պատվերներ չկան'}
                 </p>
               </div>
             ) : (
               filteredOrders.map((order) => (
-                <div key={order.id} className="p-6 hover:bg-gray-50 transition-colors">
-                  <div className="flex items-center justify-between">
-                    {/* Order Info - только главное */}
-                    <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 bg-orange-50 rounded-xl flex items-center justify-center">
-                        <ShoppingCart className="h-6 w-6 text-orange-500" />
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            Заказ #{order.id.slice(-8)}
-                          </h3>
-                        </div>
-                        
-                        {/* Только основная информация */}
-                        <div className="flex items-center space-x-6 text-sm">
-                          {/* Сумма - в начале, большая и заметная */}
-                          <div>
-                            <span className="text-gray-500 text-xs">Сумма:</span>
-                            <div className="text-lg font-bold text-orange-600">
-                              {order.totalAmount.toLocaleString()} ֏
-                            </div>
-                          </div>
-                          
-                          {/* Количество товаров - тоже заметное */}
-                          <div>
-                            <span className="text-gray-500 text-xs">Товаров:</span>
-                            <div className="text-base font-semibold text-gray-900">
-                              {order.items.length} шт.
-                            </div>
-                          </div>
-                          
-                          {/* Время */}
-                          <div>
-                            <span className="text-gray-500 text-xs">Время:</span>
-                            <div className="text-sm font-medium text-gray-900">
-                              {new Date(order.createdAt).toLocaleDateString('ru-RU')} {new Date(order.createdAt).toLocaleTimeString('ru-RU', { 
-                                hour: '2-digit', 
-                                minute: '2-digit' 
-                              })}
-                            </div>
-                          </div>
-                          
-                          {/* Клиент - в конце */}
-                          <div>
-                            <span className="text-gray-500 text-xs">Клиент:</span>
-                            <div className="text-sm font-medium text-gray-900">
-                              {order.user?.name || order.name || 'Гость'}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                <div key={order.id} className="p-4 flex items-center gap-4 hover:bg-neutral-50 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(order.id)}
+                    onChange={() => toggleSelectOne(order.id)}
+                    className="rounded border-neutral-300 text-primary-500"
+                    aria-label={`Ընտրել պատվեր ${order.id.slice(-8)}`}
+                  />
+                  <div className="w-10 h-10 bg-orange-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <ShoppingCart className="h-5 w-5 text-orange-500" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-neutral-900">Պատվեր #{order.id.slice(-8)}</h3>
+                    <div className="flex items-center gap-4 text-sm mt-1">
+                      <span className="font-semibold text-primary-500">{order.totalAmount.toLocaleString()} ֏</span>
+                      <span className="text-neutral-600">{order.items.length} ապրանք</span>
+                      <span className="text-neutral-500">
+                        {new Date(order.createdAt).toLocaleDateString('hy-AM')} {new Date(order.createdAt).toLocaleTimeString('hy-AM', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      <span className="text-neutral-700">{order.user?.name || order.name || 'Հյուր'}</span>
                     </div>
-                    
-                    {/* Actions */}
-                    <div className="flex items-center space-x-3">
-                      <Button
-                        onClick={() => openOrderDetails(order)}
-                        variant="outline"
-                        className="flex items-center gap-2"
-                      >
-                        <Eye className="h-4 w-4" />
-                        Детали
-                      </Button>
-                      
-                      {/* Объединенный статус и смена статуса */}
-                      <div className="relative">
-                        <select
-                          value={order.status}
-                          onChange={(e) => updateOrderStatus(order.id, e.target.value)}
-                          className={`px-4 py-2 rounded-xl border-0 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors cursor-pointer appearance-none pr-10 ${statusColors[order.status]} font-medium`}
-                        >
-                          <option value="PENDING">⏳ Ожидает</option>
-                          <option value="CONFIRMED">✅ Подтвержден</option>
-                          <option value="PREPARING">👨‍🍳 Готовится</option>
-                          <option value="READY">📦 Готов</option>
-                          <option value="DELIVERED">🚚 Доставлен</option>
-                          <option value="CANCELLED">❌ Отменен</option>
-                        </select>
-                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                          <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </div>
-                      </div>
-                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button onClick={() => openOrderDetails(order)} variant="outline" size="sm" className="gap-1">
+                      <Eye className="h-4 w-4" />
+                      Մանրամասներ
+                    </Button>
+                    <select
+                      value={order.status}
+                      onChange={(e) => updateOrderStatus(order.id, e.target.value)}
+                      className={`px-3 py-1.5 rounded-lg border-0 text-sm font-medium cursor-pointer ${statusColors[order.status]}`}
+                    >
+                      {ORDER_TABS.filter((t) => t.value).map((t) => (
+                        <option key={t.value} value={t.value}>{t.label}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               ))
             )}
           </div>
-        </div>
 
-        {/* Пагинация */}
         {pagination.pages > 1 && (
-          <div className="flex items-center justify-center gap-2 mt-8">
-            <Button
-              variant="outline"
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-              disabled={currentPage === 1}
-              className="flex items-center gap-2"
-            >
-              <ChevronRight className="h-4 w-4 rotate-180" />
-              Назад
-            </Button>
-            
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">
-                Страница {currentPage} из {pagination.pages}
-              </span>
-            </div>
-            
-            <Button
-              variant="outline"
-              onClick={() => setCurrentPage(prev => Math.min(pagination.pages, prev + 1))}
-              disabled={currentPage === pagination.pages}
-              className="flex items-center gap-2"
-            >
-              Вперед
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+          <div className="p-4 border-t border-neutral-200">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={pagination.pages}
+              onPageChange={(p) => { setCurrentPage(p); setSelectedIds(new Set()) }}
+              itemsPerPage={pagination.limit}
+              totalItems={pagination.total}
+              itemsLabel="պատվերից"
+            />
           </div>
         )}
 
-        {/* Модальное окно с деталями заказа */}
-        {showModal && selectedOrder && (
-          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-200">
-              <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-2xl">
-                <h2 className="text-xl font-semibold text-gray-900">
-                  Заказ #{selectedOrder.id.slice(-8)}
+        {showModal && selectedOrder && typeof document !== 'undefined' && createPortal(
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            onClick={closeModal}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="order-details-title"
+          >
+            <div
+              className="relative bg-white rounded-2xl shadow-2xl border border-neutral-200 w-full max-w-4xl max-h-[90vh] flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-neutral-200 rounded-t-2xl bg-white">
+                <h2 id="order-details-title" className="text-xl font-semibold text-neutral-900">
+                  Պատվեր #{selectedOrder.id.slice(-8)}
                 </h2>
-                <Button
-                  onClick={closeModal}
-                  variant="outline"
-                  className="flex items-center gap-2"
-                >
+                <Button onClick={closeModal} variant="outline" size="sm" className="gap-2" aria-label="Փակել">
                   <X className="h-4 w-4" />
-                  Закрыть
+                  Փակել
                 </Button>
               </div>
-
-              <div className="p-6 space-y-6">
-                {/* Статус и основная информация */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className={`${statusBackgroundColors[selectedOrder.status]} ${statusBorderColors[selectedOrder.status]} border rounded-2xl p-4`}>
                     <div className="flex items-center gap-2 mb-3">
                       {getStatusIcon(selectedOrder.status)}
-                      <span className="font-medium text-gray-900">Статус</span>
+                      <span className="font-medium text-neutral-900">Կարգավիճակ</span>
                     </div>
                     <select
                       value={selectedOrder.status}
                       onChange={(e) => updateOrderStatus(selectedOrder.id, e.target.value)}
-                      className={`w-full px-3 py-2 bg-white border-2 ${statusBorderColors[selectedOrder.status]} rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors text-gray-900 font-medium`}
+                      className={`w-full px-3 py-2 bg-white border-2 ${statusBorderColors[selectedOrder.status]} rounded-xl focus:ring-2 focus:ring-primary-500 text-neutral-900 font-medium`}
                     >
-                      <option value="PENDING">⏳ Ожидает</option>
-                      <option value="CONFIRMED">✅ Подтвержден</option>
-                      <option value="PREPARING">👨‍🍳 Готовится</option>
-                      <option value="READY">📦 Готов</option>
-                      <option value="DELIVERED">🚚 Доставлен</option>
-                      <option value="CANCELLED">❌ Отменен</option>
+                      {ORDER_TABS.filter((t) => t.value).map((t) => (
+                        <option key={t.value} value={t.value}>{t.label}</option>
+                      ))}
                     </select>
                   </div>
-
                   <div className="bg-blue-50 rounded-2xl p-4">
                     <div className="flex items-center gap-2 mb-3">
                       <Calendar className="h-4 w-4 text-blue-500" />
-                      <span className="font-medium text-gray-900">Время заказа</span>
+                      <span className="font-medium text-neutral-900">Պատվերի ժամանակ</span>
                     </div>
-                    <div className="text-sm font-medium text-gray-900">
-                      {new Date(selectedOrder.createdAt).toLocaleString('ru-RU')}
+                    <div className="text-sm font-medium text-neutral-900">
+                      {new Date(selectedOrder.createdAt).toLocaleString('hy-AM')}
                     </div>
                   </div>
-
                   <div className="bg-green-50 rounded-2xl p-4">
                     <div className="flex items-center gap-2 mb-3">
                       <CreditCard className="h-4 w-4 text-green-500" />
-                      <span className="font-medium text-gray-900">Сумма</span>
+                      <span className="font-medium text-neutral-900">Գումար</span>
                     </div>
                     <div className="text-lg font-semibold text-orange-600">
                       {selectedOrder.totalAmount.toLocaleString()} ֏
                     </div>
-                    <div className="text-sm font-medium text-gray-700">{selectedOrder.paymentMethod}</div>
+                    <div className="text-sm font-medium text-neutral-700">{selectedOrder.paymentMethod}</div>
                   </div>
                 </div>
-
-                {/* Информация о клиенте и доставке */}
-                <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6">
-                  <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <UserIcon className="h-5 w-5 text-orange-500" />
-                    Информация о клиенте и доставке
+                <div className="bg-neutral-50 border border-neutral-200 rounded-2xl p-6">
+                  <h3 className="font-semibold text-neutral-900 mb-4 flex items-center gap-2">
+                    <UserIcon className="h-5 w-5 text-primary-500" />
+                    Հաճախորդ և առաքում
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div>
-                      <p className="text-sm text-gray-600 mb-1">Имя</p>
-                      <p className="font-medium text-gray-900">{selectedOrder.user.name}</p>
+                      <p className="text-sm text-neutral-600 mb-1">Անուն</p>
+                      <p className="font-medium text-neutral-900">{selectedOrder.user?.name ?? selectedOrder.name}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600 mb-1">Email</p>
-                      <p className="font-medium text-gray-900">{selectedOrder.user.email}</p>
+                      <p className="text-sm text-neutral-600 mb-1">Email</p>
+                      <p className="font-medium text-neutral-900">{selectedOrder.user?.email ?? '—'}</p>
                     </div>
-                    {selectedOrder.user.phone && (
+                    {(selectedOrder.user?.phone || selectedOrder.phone) && (
                       <div>
-                        <p className="text-sm text-gray-600 mb-1">Телефон</p>
-                        <p className="font-medium text-gray-900 flex items-center gap-1">
+                        <p className="text-sm text-neutral-600 mb-1">Հեռախոս</p>
+                        <p className="font-medium text-neutral-900 flex items-center gap-1">
                           <Phone className="h-4 w-4" />
-                          {selectedOrder.user.phone}
+                          {selectedOrder.user?.phone || selectedOrder.phone}
                         </p>
                       </div>
                     )}
                     <div>
-                      <p className="text-sm text-gray-600 mb-1">Адрес доставки</p>
-                      <p className="font-medium text-gray-900">{selectedOrder.address || 'Адрес не указан'}</p>
+                      <p className="text-sm text-neutral-600 mb-1">Հասցե</p>
+                      <p className="font-medium text-neutral-900">{selectedOrder.address || '—'}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600 mb-1">Время доставки</p>
-                      <p className="font-medium text-gray-900">{selectedOrder.deliveryTime}</p>
+                      <p className="text-sm text-neutral-600 mb-1">Առաքման ժամանակ</p>
+                      <p className="font-medium text-neutral-900">{selectedOrder.deliveryTime ?? '—'}</p>
                     </div>
                   </div>
                 </div>
-
-                {/* Товары в заказе */}
-                <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6">
-                  <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <Package className="h-5 w-5 text-orange-500" />
-                    Товары в заказе
+                <div className="bg-neutral-50 border border-neutral-200 rounded-2xl p-6">
+                  <h3 className="font-semibold text-neutral-900 mb-4 flex items-center gap-2">
+                    <Package className="h-5 w-5 text-primary-500" />
+                    Ապրանքներ
                   </h3>
                   <div className="space-y-3">
                     {selectedOrder.items.map((item, index) => (
-                      <div key={index} className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-200">
+                      <div key={index} className="flex items-center justify-between p-4 bg-white rounded-xl border border-neutral-200">
                         <div className="flex items-center gap-3">
                           {item.product.image && item.product.image !== 'no-image' ? (
                             <img
@@ -649,23 +615,23 @@ export default function AdminOrdersPage() {
                             </div>
                           )}
                           <div>
-                            <p className="font-medium text-sm text-gray-900">{item.product.name}</p>
+                            <p className="font-medium text-sm text-neutral-900">{item.product.name}</p>
                             <div className="flex items-center gap-2 mt-1">
-                              <span className="text-xs text-gray-600">
+                              <span className="text-xs text-neutral-600">
                                 {item.product.price.toLocaleString()} ֏
                               </span>
-                              <span className="text-gray-400">×</span>
-                              <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-semibold">
-                                {item.quantity} шт.
+                              <span className="text-neutral-400">×</span>
+                              <span className="bg-orange-100 text-orange-800 px-2 py-0.5 rounded text-xs font-medium">
+                                {item.quantity} հատ
                               </span>
                             </div>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-semibold text-sm text-gray-900">
+                          <p className="font-semibold text-sm text-neutral-900">
                             {(item.product.price * item.quantity).toLocaleString()} ֏
                           </p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-neutral-500">
                             {item.quantity} × {item.product.price.toLocaleString()} ֏
                           </p>
                         </div>
@@ -675,14 +641,21 @@ export default function AdminOrdersPage() {
                 </div>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
-      </div>
-      
-      {/* Hide Footer on Mobile and Tablet */}
-      <div className="hidden lg:block">
-        <Footer />
-      </div>
+
+      <ConfirmModal
+        isOpen={bulkConfirmOpen}
+        onClose={() => !bulkDeleting && setBulkConfirmOpen(false)}
+        onConfirm={handleBulkDelete}
+        title="Խմբային ջնջում"
+        message={`Հեռացնել ${selectedIds.size} պատվեր(ներ)։ Գործողությունը հնարավոր չէ հետարկել։`}
+        confirmLabel="Ջնջել"
+        cancelLabel="Չեղարկել"
+        variant="danger"
+        isLoading={bulkDeleting}
+      />
     </div>
   )
 }

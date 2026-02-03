@@ -15,11 +15,12 @@ export async function GET(
       )
     }
 
-    // Получаем товар по ID с категорией
+    // Получаем товар по ID с категорией (только опубликованные и доступные)
     const product = await prisma.product.findUnique({
       where: {
         id,
-        isAvailable: true
+        isAvailable: true,
+        published: true
       },
       include: {
         category: {

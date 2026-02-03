@@ -5,7 +5,7 @@ import ClientProviders from "@/components/ClientProviders";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import ServiceWorkerProvider from "@/components/ServiceWorkerProvider";
 import PullToRefresh from "@/components/PullToRefresh";
-import Header from "@/components/Header";
+import ConditionalHeader from "@/components/ConditionalHeader";
 import ChatButton from "@/components/ChatButton";
 
 const inter = Inter({
@@ -38,7 +38,7 @@ export default function RootLayout({
       <body className={`${inter.variable} font-sans antialiased overflow-x-hidden bg-white`} suppressHydrationWarning>
         <ServiceWorkerProvider />
         <ClientProviders>
-          <Header />
+          <ConditionalHeader />
           <PullToRefresh>
             {children}
           </PullToRefresh>

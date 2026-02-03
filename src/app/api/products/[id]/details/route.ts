@@ -28,7 +28,7 @@ export async function GET(
     }
 
     const product = await prisma.product.findUnique({
-      where: { id, isAvailable: true },
+      where: { id, isAvailable: true, published: true },
       include: productInclude,
     })
 
@@ -43,6 +43,7 @@ export async function GET(
     let related = await prisma.product.findMany({
       where: {
         isAvailable: true,
+        published: true,
         id: { not: id },
         ...(categoryId ? { categoryId } : {}),
       },
@@ -56,6 +57,7 @@ export async function GET(
       const more = await prisma.product.findMany({
         where: {
           isAvailable: true,
+          published: true,
           id: { notIn: excludeIds },
         },
         orderBy: { createdAt: 'desc' },

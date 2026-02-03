@@ -8,6 +8,8 @@ interface PaginationProps {
   onPageChange: (page: number) => void
   itemsPerPage: number
   totalItems: number
+  /** Լabel for "X-Y of Z items" (e.g. արտադրանքից, պատվերից). Default: արտադրանքից */
+  itemsLabel?: string
 }
 
 export default function Pagination({
@@ -15,7 +17,8 @@ export default function Pagination({
   totalPages,
   onPageChange,
   itemsPerPage,
-  totalItems
+  totalItems,
+  itemsLabel = 'արտադրանքից'
 }: PaginationProps) {
   const startItem = (currentPage - 1) * itemsPerPage + 1
   const endItem = Math.min(currentPage * itemsPerPage, totalItems)
@@ -52,7 +55,7 @@ export default function Pagination({
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8">
       {/* Информация о товарах */}
       <div className="text-sm text-gray-700">
-        Ցուցադրված {startItem}-{endItem} {totalItems} արտադրանքից
+        Ցուցադրված {startItem}-{endItem} / {totalItems} {itemsLabel}
       </div>
 
       {/* Навигация по страницам */}

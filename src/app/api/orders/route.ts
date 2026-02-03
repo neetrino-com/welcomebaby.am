@@ -3,7 +3,16 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { logger } from '@/lib/logger'
+import type { OrderSummary, OrdersListResponse } from '@/types'
 
+const DEFAULT_PAGE_SIZE = 10
+const MAX_PAGE_SIZE = 50
+
+/**
+ * GET /api/orders?page=1&pageSize=10
+ * Returns paginated order summaries for the authenticated user.
+ * Response: { items: OrderSummary[], page, pageSize, totalCount, totalPages }
+ */
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -15,28 +24,51 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const orders = await prisma.order.findMany({
-      where: {
-        userId: session.user.id
-      },
-      include: {
-        items: {
-          include: {
-            product: {
-              select: {
-                name: true,
-                image: true
-              }
+    const { searchParams } = new URL(request.url)
+    const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10) || 1)
+    const pageSize = Math.min(
+      MAX_PAGE_SIZE,
+      Math.max(1, parseInt(searchParams.get('pageSize') ?? String(DEFAULT_PAGE_SIZE), 10) || DEFAULT_PAGE_SIZE)
+    )
+    const skip = (page - 1) * pageSize
+
+    const [orders, totalCount] = await Promise.all([
+      prisma.order.findMany({
+        where: { userId: session.user.id },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: pageSize,
+        include: {
+          items: {
+            include: {
+              product: { select: { name: true } }
             }
           }
         }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    })
+      }),
+      prisma.order.count({ where: { userId: session.user.id } })
+    ])
 
-    return NextResponse.json(orders)
+    const items: OrderSummary[] = orders.map((order) => ({
+      id: order.id,
+      status: order.status,
+      total: order.total,
+      createdAt: order.createdAt.toISOString(),
+      itemCount: order.items.length,
+      firstItemName: order.items[0]?.product.name ?? null
+    }))
+
+    const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
+
+    const response: OrdersListResponse = {
+      items,
+      page,
+      pageSize,
+      totalCount,
+      totalPages
+    }
+
+    return NextResponse.json(response)
   } catch (error) {
     logger.error('Orders API error', error)
     return NextResponse.json(
@@ -71,7 +103,7 @@ export async function POST(request: NextRequest) {
     if (items && items.length > 0) {
       const productIds = items.map((item: any) => item.productId)
       const existingProducts = await prisma.product.findMany({
-        where: { id: { in: productIds } },
+        where: { id: { in: productIds }, isAvailable: true, published: true },
         select: { id: true, name: true }
       })
       

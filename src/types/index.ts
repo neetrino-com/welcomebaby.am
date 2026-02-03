@@ -15,6 +15,47 @@ export interface OrderWithItems extends Order {
   user: User
 }
 
+/** Summary for order list (paginated); minimal payload */
+export interface OrderSummary {
+  id: string
+  status: string
+  total: number
+  createdAt: string
+  itemCount: number
+  firstItemName: string | null
+}
+
+/** Full order for detail view / modal */
+export interface OrderDetailsItem {
+  product: { name: string; image: string }
+  quantity: number
+  price: number
+}
+
+export interface OrderDetails {
+  id: string
+  status: string
+  total: number
+  createdAt: string
+  updatedAt: string
+  name: string
+  phone: string
+  address: string
+  notes: string | null
+  paymentMethod: string
+  deliveryTime: string | null
+  items: OrderDetailsItem[]
+}
+
+/** Offset-based pagination response for GET /api/orders */
+export interface OrdersListResponse {
+  items: OrderSummary[]
+  page: number
+  pageSize: number
+  totalCount: number
+  totalPages: number
+}
+
 export interface CartItem {
   product: Product
   quantity: number

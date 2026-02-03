@@ -46,17 +46,17 @@ export async function GET() {
       newToysProducts,
     ] = await Promise.all([
       prisma.product.findMany({
-        where: { isAvailable: true },
+        where: { isAvailable: true, published: true },
         orderBy: { createdAt: 'desc' },
         select: productSelect,
       }),
       prisma.product.findMany({
-        where: { isAvailable: true, status: 'HIT' },
+        where: { isAvailable: true, published: true, status: 'HIT' },
         orderBy: { createdAt: 'desc' },
         select: productSelect,
       }),
       prisma.product.findMany({
-        where: { isAvailable: true, status: 'BANNER' },
+        where: { isAvailable: true, published: true, status: 'BANNER' },
         orderBy: { createdAt: 'desc' },
         take: 1,
         select: productSelect,
@@ -64,19 +64,21 @@ export async function GET() {
       prisma.product.findMany({
         where: {
           isAvailable: true,
+          published: true,
           createdAt: { gte: thirtyDaysAgo },
         },
         orderBy: { createdAt: 'desc' },
         select: productSelect,
       }),
       prisma.product.findMany({
-        where: { isAvailable: true, salePrice: { not: null } },
+        where: { isAvailable: true, published: true, salePrice: { not: null } },
         orderBy: { createdAt: 'desc' },
         select: productSelect,
       }),
       prisma.product.findMany({
         where: {
           isAvailable: true,
+          published: true,
           createdAt: { gte: thirtyDaysAgo },
           category: { name: 'Երաժշտական խաղալիքներ' },
         },

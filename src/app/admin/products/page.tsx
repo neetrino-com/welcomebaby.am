@@ -4,17 +4,17 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
-import { 
-  Plus, 
-  Edit, 
-  Trash2, 
-  ArrowLeft,
+import {
+  Plus,
+  Edit,
+  Trash2,
   Package,
   Search,
   Filter
 } from 'lucide-react'
-import Footer from '@/components/Footer'
 import Pagination from '@/components/Pagination'
+import BulkActionsBar from '@/components/admin/BulkActionsBar'
+import ConfirmModal from '@/components/admin/ConfirmModal'
 import { Product, ProductStatus, Category } from '@/types'
 
 export default function AdminProducts() {
@@ -26,49 +26,52 @@ export default function AdminProducts() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedStatus, setSelectedStatus] = useState('')
+  const [visibility, setVisibility] = useState('') // '' | 'active' | 'draft'
+  const [sortBy, setSortBy] = useState<'' | 'price_asc' | 'price_desc'>('')
   const [currentPage, setCurrentPage] = useState(1)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false)
+  const [bulkDeleting, setBulkDeleting] = useState(false)
+  const [productToDelete, setProductToDelete] = useState<string | null>(null)
+  const [singleDeleting, setSingleDeleting] = useState(false)
+  const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null)
+  const [bulkStatusConfirm, setBulkStatusConfirm] = useState<'active' | 'draft' | null>(null)
+  const [bulkStatusLoading, setBulkStatusLoading] = useState(false)
   const [pagination, setPagination] = useState({
     totalPages: 1,
     totalItems: 0,
     itemsPerPage: 20
   })
-  const prevFiltersRef = useRef({ searchTerm: '', selectedCategory: '', selectedStatus: '' })
+  const prevFiltersRef = useRef({ searchTerm: '', selectedCategory: '', selectedStatus: '', visibility: '', sortBy: '' })
 
   useEffect(() => {
     if (status === 'loading') return
-
     if (!session || session.user?.role !== 'ADMIN') {
       router.push('/login')
       return
     }
-
-    // Загружаем категории один раз
     fetchCategories()
   }, [session, status, router])
 
   useEffect(() => {
     if (status === 'loading' || !session || session.user?.role !== 'ADMIN') return
-
-    // Проверяем, изменились ли фильтры
-    const filtersChanged = 
+    const filtersChanged =
       prevFiltersRef.current.searchTerm !== searchTerm ||
       prevFiltersRef.current.selectedCategory !== selectedCategory ||
-      prevFiltersRef.current.selectedStatus !== selectedStatus
-
-    // Если фильтры изменились, сбрасываем страницу на 1
+      prevFiltersRef.current.selectedStatus !== selectedStatus ||
+      prevFiltersRef.current.visibility !== visibility ||
+      prevFiltersRef.current.sortBy !== sortBy
     if (filtersChanged) {
-      prevFiltersRef.current = { searchTerm, selectedCategory, selectedStatus }
+      prevFiltersRef.current = { searchTerm, selectedCategory, selectedStatus, visibility, sortBy }
       if (currentPage !== 1) {
         setCurrentPage(1)
-        return // fetchProducts вызовется после обновления currentPage
+        return
       }
     } else {
-      // Обновляем предыдущие значения фильтров
-      prevFiltersRef.current = { searchTerm, selectedCategory, selectedStatus }
+      prevFiltersRef.current = { searchTerm, selectedCategory, selectedStatus, visibility, sortBy }
     }
-
     fetchProducts()
-  }, [session, status, router, currentPage, searchTerm, selectedCategory, selectedStatus])
+  }, [session, status, router, currentPage, searchTerm, selectedCategory, selectedStatus, visibility, sortBy])
 
   const fetchCategories = async () => {
     try {
@@ -85,21 +88,12 @@ export default function AdminProducts() {
   const fetchProducts = async () => {
     try {
       setIsLoading(true)
-      const params = new URLSearchParams({
-        page: currentPage.toString(),
-        limit: '20'
-      })
-      
-      if (searchTerm) {
-        params.append('search', searchTerm)
-      }
-      if (selectedCategory) {
-        params.append('category', selectedCategory)
-      }
-      if (selectedStatus) {
-        params.append('status', selectedStatus)
-      }
-
+      const params = new URLSearchParams({ page: currentPage.toString(), limit: '20' })
+      if (searchTerm) params.append('search', searchTerm)
+      if (selectedCategory) params.append('category', selectedCategory)
+      if (selectedStatus) params.append('status', selectedStatus)
+      if (visibility) params.append('visibility', visibility)
+      if (sortBy) params.append('sortBy', sortBy)
       const response = await fetch(`/api/admin/products?${params.toString()}`)
       if (response.ok) {
         const data = await response.json()
@@ -117,388 +111,476 @@ export default function AdminProducts() {
     }
   }
 
-  const handleDelete = async (productId: string) => {
-    if (!confirm('Вы уверены, что хотите удалить этот товар?')) return
-
+  const handleSingleDeleteConfirm = async () => {
+    if (!productToDelete) return
+    setSingleDeleting(true)
     try {
-      const response = await fetch(`/api/products/${productId}`, {
-        method: 'DELETE'
-      })
-
+      const response = await fetch(`/api/admin/products/${productToDelete}`, { method: 'DELETE' })
       if (response.ok) {
-        // Перезагружаем товары после удаления
+        setProductToDelete(null)
         fetchProducts()
       } else {
-        alert('Ошибка при удалении товара')
+        const data = await response.json().catch(() => ({}))
+        alert(data.error || 'Ջնջելիս սխալ է տեղի ունեցել')
       }
     } catch (error) {
       console.error('Error deleting product:', error)
-      alert('Ошибка при удалении товара')
+      alert('Ջնջելիս սխալ է տեղի ունեցել')
+    } finally {
+      setSingleDeleting(false)
     }
+  }
+
+  const handleStatusToggle = async (productId: string, currentPublished: boolean) => {
+    setStatusUpdatingId(productId)
+    try {
+      const newStatus = currentPublished ? 'draft' : 'active'
+      const response = await fetch(`/api/admin/products/${productId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      })
+      if (response.ok) fetchProducts()
+      else alert('Կարգավիճակը թարմացնելիս սխալ')
+    } catch (error) {
+      console.error('Error updating status:', error)
+      alert('Կարգավիճակը թարմացնելիս սխալ')
+    } finally {
+      setStatusUpdatingId(null)
+    }
+  }
+
+  const handleBulkStatus = async (status: 'active' | 'draft') => {
+    const ids = Array.from(selectedIds)
+    if (ids.length === 0) return
+    setBulkStatusLoading(true)
+    try {
+      const response = await fetch('/api/admin/products/bulk-status', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids, status })
+      })
+      const data = await response.json().catch(() => ({}))
+      if (response.ok) {
+        setBulkStatusConfirm(null)
+        setSelectedIds(new Set())
+        fetchProducts()
+      } else {
+        alert(data.error || 'Սխալ')
+      }
+    } catch (error) {
+      console.error('Bulk status error:', error)
+      alert('Սխալ է տեղի ունեցել')
+    } finally {
+      setBulkStatusLoading(false)
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    const ids = Array.from(selectedIds)
+    if (ids.length === 0) return
+    setBulkDeleting(true)
+    try {
+      const response = await fetch('/api/admin/products/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids })
+      })
+      const data = await response.json().catch(() => ({}))
+      if (response.ok) {
+        const failed = data.failed || []
+        if (failed.length > 0) {
+          alert(`Ջնջվել է ${data.deleted}. Չհաջողված՝ ${failed.length}.`)
+        }
+        setSelectedIds(new Set())
+        setBulkDeleteConfirmOpen(false)
+        fetchProducts()
+      } else {
+        alert(data.error || 'Սխալ')
+      }
+    } catch (error) {
+      console.error('Bulk delete error:', error)
+      alert('Սխալ է տեղի ունեցել')
+    } finally {
+      setBulkDeleting(false)
+    }
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === products.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(products.map((p) => p.id)))
+    }
+  }
+
+  const toggleSelectOne = (id: string) => {
+    const next = new Set(selectedIds)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    setSelectedIds(next)
   }
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
-    // Прокручиваем вверх страницы при смене страницы
+    setSelectedIds(new Set())
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const handleSearchChange = (value: string) => {
-    setSearchTerm(value)
-  }
-
-  const handleCategoryChange = (value: string) => {
-    setSelectedCategory(value)
-  }
-
-  const handleStatusChange = (value: string) => {
-    setSelectedStatus(value)
-  }
-  
-  // Статистика по статусам (только для текущей страницы)
   const statusStats = {
     total: pagination.totalItems,
-    regular: products.filter(p => p.status === 'REGULAR').length,
-    hit: products.filter(p => p.status === 'HIT').length,
-    new: products.filter(p => p.status === 'NEW').length,
-    classic: products.filter(p => p.status === 'CLASSIC').length,
-    banner: products.filter(p => p.status === 'BANNER').length
+    regular: products.filter((p) => p.status === 'REGULAR').length,
+    hit: products.filter((p) => p.status === 'HIT').length,
+    new: products.filter((p) => p.status === 'NEW').length,
+    classic: products.filter((p) => p.status === 'CLASSIC').length,
+    banner: products.filter((p) => p.status === 'BANNER').length
   }
 
   const getStatusBadge = (productStatus: ProductStatus) => {
     switch (productStatus) {
       case 'HIT':
-        return { 
-          text: 'ХИТ', 
-          className: 'bg-red-100 text-red-800 border-red-200' 
-        }
+        return { text: 'ՀԻՏ', className: 'bg-red-100 text-red-800 border-red-200' }
       case 'NEW':
-        return { 
-          text: 'НОВИНКА', 
-          className: 'bg-green-100 text-green-800 border-green-200' 
-        }
+        return { text: 'ՆՈՐ', className: 'bg-green-100 text-green-800 border-green-200' }
       case 'CLASSIC':
-        return { 
-          text: 'КЛАССИКА', 
-          className: 'bg-blue-100 text-blue-800 border-blue-200' 
-        }
+        return { text: 'ԿԼԱՍԻԿ', className: 'bg-blue-100 text-blue-800 border-blue-200' }
       case 'BANNER':
-        return { 
-          text: 'БАННЕР', 
-          className: 'bg-purple-100 text-purple-800 border-purple-200' 
-        }
+        return { text: 'ԲԱՆՆԵՐ', className: 'bg-purple-100 text-purple-800 border-purple-200' }
       default:
-        return null // Обычные товары без лейбла
+        return null
     }
   }
 
   if (status === 'loading' || isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-t-transparent rounded-full animate-spin mx-auto mb-4" style={{ borderColor: '#f3d98c', borderTopColor: 'transparent' }}></div>
-          <p className="text-gray-600">Загрузка...</p>
-        </div>
+      <div className="flex items-center justify-center py-24">
+        <div className="w-12 h-12 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+        <p className="ml-3 text-neutral-600">Բեռնվում է...</p>
       </div>
     )
   }
 
-  if (!session || session.user?.role !== 'ADMIN') {
-    return null
-  }
+  if (!session || session.user?.role !== 'ADMIN') return null
+
+  const allSelected = products.length > 0 && selectedIds.size === products.length
+  const someSelected = selectedIds.size > 0
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      
-      {/* Отступ для fixed хедера */}
-      <div className="lg:hidden h-20"></div>
-      <div className="hidden lg:block h-28"></div>
-      
-      <div className="max-w-[98%] mx-auto px-2 sm:px-4 lg:px-6 py-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center space-x-4">
-            <Link 
-              href="/admin"
-              className="flex items-center text-gray-600 hover:text-orange-500 transition-colors"
+    <div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <h1 className="text-xl font-bold text-neutral-900">Ապրանքներ</h1>
+        <Link
+          href="/admin/products/new"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-primary-500 text-white hover:bg-primary-600"
+        >
+          <Plus className="h-5 w-5" />
+          Ավելացնել ապրանք
+        </Link>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">
+              <Search className="inline h-4 w-4 mr-1" />
+              Փնտրել
+            </label>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              placeholder="Անուն կամ նկարագրություն..."
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">
+              <Filter className="inline h-4 w-4 mr-1" />
+              Կատեգորիա
+            </label>
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-neutral-900 bg-white"
             >
-              <ArrowLeft className="h-5 w-5 mr-2" />
-              Назад к админке
-            </Link>
-            <div className="h-8 w-px bg-gray-300"></div>
-            <h1 className="text-3xl font-bold text-gray-900">Управление товарами</h1>
+              <option value="">Բոլոր կատեգորիաները</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
           </div>
-          
-          <Link 
-            href="/admin/products/new"
-            className="flex items-center bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors"
-          >
-            <Plus className="h-5 w-5 mr-2" />
-            Добавить товар
-          </Link>
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">
+              <Filter className="inline h-4 w-4 mr-1" />
+              Կարգավիճակ
+            </label>
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-neutral-900 bg-white"
+            >
+              <option value="">Բոլորը</option>
+              <option value="special">Հատուկ</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">
+              <Filter className="inline h-4 w-4 mr-1" />
+              Տեսանելիություն
+            </label>
+            <select
+              value={visibility}
+              onChange={(e) => setVisibility(e.target.value)}
+              className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-neutral-900 bg-white"
+            >
+              <option value="">Բոլորը</option>
+              <option value="active">Ակտիվ</option>
+              <option value="draft">Սևագիր</option>
+            </select>
+          </div>
         </div>
+      </div>
 
-        {/* Filters */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Search className="inline h-4 w-4 mr-1" />
-                Поиск
-              </label>
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => handleSearchChange(e.target.value)}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
-                placeholder="Поиск по названию или описанию..."
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Filter className="inline h-4 w-4 mr-1" />
-                Категория
-              </label>
-              <select
-                value={selectedCategory}
-                onChange={(e) => handleCategoryChange(e.target.value)}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors text-gray-900 bg-white"
-                style={{ color: '#111827' }}
-              >
-                <option value="" style={{ color: '#111827', backgroundColor: 'white' }}>Все категории</option>
-                {categories.map(category => (
-                  <option key={category.id} value={category.id} style={{ color: '#111827', backgroundColor: 'white' }}>{category.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Filter className="inline h-4 w-4 mr-1" />
-                Статус
-              </label>
-              <select
-                value={selectedStatus}
-                onChange={(e) => handleStatusChange(e.target.value)}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors text-gray-900 bg-white"
-                style={{ color: '#111827' }}
-              >
-                <option value="" style={{ color: '#111827', backgroundColor: 'white' }}>Все</option>
-                <option value="special" style={{ color: '#111827', backgroundColor: 'white' }}>Особые</option>
-              </select>
-            </div>
+      <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden">
+        <div className="p-4 border-b border-neutral-200 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-semibold text-neutral-900">
+            Ապրանքներ ({pagination.totalItems})
+          </h2>
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-neutral-500">Ընդամենը: {statusStats.total}</span>
+            {statusStats.hit > 0 && <span className="px-2 py-0.5 bg-red-100 text-red-800 rounded text-xs font-medium">Հիթ: {statusStats.hit}</span>}
+            {statusStats.new > 0 && <span className="px-2 py-0.5 bg-green-100 text-green-800 rounded text-xs font-medium">Նոր: {statusStats.new}</span>}
+            {statusStats.classic > 0 && <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs font-medium">Կլասիկ: {statusStats.classic}</span>}
+            {statusStats.banner > 0 && <span className="px-2 py-0.5 bg-purple-100 text-purple-800 rounded text-xs font-medium">Բաններ: {statusStats.banner}</span>}
           </div>
         </div>
 
-        {/* Products Table */}
-        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-          <div className="p-6 border-b border-gray-300">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-900">
-                Товары ({pagination.totalItems})
-              </h2>
-              
-              {/* Статистика по статусам */}
-              <div className="flex items-center space-x-4 text-sm">
-                <span className="text-gray-500">Всего: {statusStats.total}</span>
-                {statusStats.hit > 0 && (
-                  <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold">
-                    Хиты: {statusStats.hit}
-                  </span>
-                )}
-                {statusStats.new > 0 && (
-                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
-                    Новинки: {statusStats.new}
-                  </span>
-                )}
-                {statusStats.classic > 0 && (
-                  <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">
-                    Классика: {statusStats.classic}
-                  </span>
-                )}
-                {statusStats.banner > 0 && (
-                  <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-semibold">
-                    Баннер: {statusStats.banner}
-                  </span>
-                )}
-              </div>
-            </div>
+        {pagination.totalPages > 1 && (
+          <div className="px-4 py-3 border-b border-neutral-200">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={pagination.totalPages}
+              onPageChange={handlePageChange}
+              itemsPerPage={pagination.itemsPerPage}
+              totalItems={pagination.totalItems}
+              itemsLabel="արտադրանքից"
+            />
           </div>
-          
-          {/* Таблица товаров */}
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1200px]">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    Изображение
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[250px]">
-                    Название
-                  </th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    Категория
-                  </th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    Цена
-                  </th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    Статус
-                  </th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    Наличие
-                  </th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    Остаток
-                  </th>
-                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    Действия
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {products.map((product) => {
-                  const statusBadge = getStatusBadge(product.status)
-                  return (
-                    <tr key={product.id} className="hover:bg-gray-50 transition-colors">
-                      {/* Изображение */}
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
-                          {product.image && product.image !== 'no-image' ? (
-                            <img 
-                              src={product.image} 
-                              alt={product.name}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <Package className="h-6 w-6 text-gray-400" />
-                          )}
-                        </div>
-                      </td>
-                      
-                      {/* Название */}
-                      <td className="px-4 py-2">
-                        <div className="max-w-md">
-                          <div className="text-sm font-semibold text-gray-900">
-                            {product.name}
-                          </div>
-                          <div className="text-xs text-gray-500 line-clamp-2 mt-1">
-                            {product.description}
-                          </div>
-                        </div>
-                      </td>
-                      
-                      {/* Категория */}
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        <span className="text-sm text-gray-900">
-                          {(product as Product & { category?: { name: string } }).category?.name || product.categoryId || 'Без категории'}
-                        </span>
-                      </td>
-                      
-                      {/* Цена */}
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        <div className="text-sm">
-                          {product.salePrice ? (
-                            <div className="flex flex-col gap-1">
-                              <div className="flex items-center gap-2">
-                                <span className="text-green-600 font-bold">{product.salePrice} ֏</span>
-                                <span className="bg-green-500 text-white text-xs px-1.5 py-0.5 rounded font-semibold">
-                                  СКИДКА
-                                </span>
-                              </div>
-                              <span className="text-gray-400 line-through text-xs">{product.price} ֏</span>
-                            </div>
-                          ) : (
-                            <span className="text-gray-900 font-semibold">{product.price} ֏</span>
-                          )}
-                        </div>
-                      </td>
-                      
-                      {/* Статус */}
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        {statusBadge ? (
-                          <span className={`px-2 py-1 rounded-full text-xs font-semibold border ${statusBadge.className}`}>
-                            {statusBadge.text}
-                          </span>
+        )}
+
+        {someSelected && (
+          <BulkActionsBar
+            selectedCount={selectedIds.size}
+            onClearSelection={() => setSelectedIds(new Set())}
+            onBulkDelete={() => setBulkDeleteConfirmOpen(true)}
+            deleteLabel="Խմբային ջնջում"
+            isLoading={bulkDeleting}
+            onBulkSetActive={() => setBulkStatusConfirm('active')}
+            onBulkSetDraft={() => setBulkStatusConfirm('draft')}
+            bulkStatusLoading={bulkStatusLoading}
+          />
+        )}
+
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[1000px]">
+            <thead className="bg-neutral-50 border-b border-neutral-200">
+              <tr>
+                <th className="px-3 py-2 text-left w-10">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={toggleSelectAll}
+                    className="rounded border-neutral-300 text-primary-500 focus:ring-primary-500"
+                    aria-label="Ընտրել բոլորը"
+                  />
+                </th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Նկար</th>
+                <th className="px-4 py-2 text-left text-xs font-semibold text-neutral-600 uppercase min-w-[200px]">Անուն</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Կատեգորիա</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">
+                  <button
+                    type="button"
+                    onClick={() => setSortBy((s) => (s === '' ? 'price_asc' : s === 'price_asc' ? 'price_desc' : ''))}
+                    className="inline-flex items-center gap-1 hover:text-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 rounded"
+                    title={sortBy === 'price_asc' ? 'Նվազման կարգով' : sortBy === 'price_desc' ? 'Չեղարկել սորտավորում' : 'Աճման կարգով'}
+                  >
+                    Գին
+                    {sortBy === 'price_asc' && <span className="text-primary-500">↑</span>}
+                    {sortBy === 'price_desc' && <span className="text-primary-500">↓</span>}
+                  </button>
+                </th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Կարգավիճակ</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Տեսանելիություն</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Առկայություն</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Մնացորդ</th>
+                <th className="px-3 py-2 text-center text-xs font-semibold text-neutral-600 uppercase">Գործողություններ</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-neutral-200">
+              {products.map((product) => {
+                const statusBadge = getStatusBadge(product.status)
+                const catName = (product as Product & { category?: { name: string } }).category?.name || product.categoryId || '—'
+                const published = (product as Product & { published?: boolean }).published !== false
+                const isUpdatingStatus = statusUpdatingId === product.id
+                return (
+                  <tr key={product.id} className="hover:bg-neutral-50">
+                    <td className="px-3 py-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(product.id)}
+                        onChange={() => toggleSelectOne(product.id)}
+                        className="rounded border-neutral-300 text-primary-500 focus:ring-primary-500"
+                        aria-label={`Ընտրել ${product.name}`}
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <div className="w-14 h-14 bg-neutral-100 rounded-lg overflow-hidden flex items-center justify-center">
+                        {product.image && product.image !== 'no-image' ? (
+                          <img src={product.image} alt="" className="w-full h-full object-cover" />
                         ) : (
-                          <span className="text-xs text-gray-400">Обычный</span>
+                          <Package className="h-6 w-6 text-neutral-400" />
                         )}
-                      </td>
-                      
-                      {/* Наличие */}
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                          product.isAvailable 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {product.isAvailable ? 'Доступен' : 'Недоступен'}
-                        </span>
-                      </td>
-                      
-                      {/* Остаток */}
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        <span className={`text-sm font-semibold ${
-                          (product.stock || 0) > 0 ? 'text-gray-900' : 'text-red-600'
-                        }`}>
-                          {product.stock || 0} шт.
-                        </span>
-                      </td>
-                      
-                      {/* Действия */}
-                      <td className="px-3 py-2 whitespace-nowrap text-center">
-                        <div className="flex items-center justify-center space-x-2">
-                          <Link
-                            href={`/admin/products/${product.id}/edit`}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                            title="Редактировать"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Link>
-                          
-                          <button
-                            onClick={() => handleDelete(product.id)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Удалить"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                      </div>
+                    </td>
+                    <td className="px-4 py-2">
+                      <div className="max-w-xs">
+                        <div className="text-sm font-medium text-neutral-900">{product.name}</div>
+                        <div className="text-xs text-neutral-500 line-clamp-2 mt-0.5">{product.description}</div>
+                      </div>
+                    </td>
+                    <td className="px-3 py-2 text-sm text-neutral-900">{catName}</td>
+                    <td className="px-3 py-2 text-sm">
+                      {product.salePrice ? (
+                        <div>
+                          <span className="text-green-600 font-semibold">{product.salePrice} ֏</span>
+                          <span className="ml-1 text-xs text-neutral-400 line-through">{product.price} ֏</span>
                         </div>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-          
-          {products.length === 0 && !isLoading && (
-            <div className="text-center py-12 text-gray-500">
-              <Package className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-              <p>Товары не найдены</p>
-            </div>
-          )}
-
-          {/* Пагинация */}
-          {pagination.totalPages > 1 && (
-            <div className="p-6 border-t border-gray-200">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={pagination.totalPages}
-                onPageChange={handlePageChange}
-                itemsPerPage={pagination.itemsPerPage}
-                totalItems={pagination.totalItems}
-              />
-            </div>
-          )}
+                      ) : (
+                        <span className="font-semibold text-neutral-900">{product.price} ֏</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2">
+                      {statusBadge ? (
+                        <span className={`px-2 py-0.5 rounded text-xs font-medium border ${statusBadge.className}`}>{statusBadge.text}</span>
+                      ) : (
+                        <span className="text-xs text-neutral-400">Սովորական</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={published}
+                          disabled={isUpdatingStatus}
+                          onChange={() => handleStatusToggle(product.id, published)}
+                          className="rounded border-neutral-300 text-primary-500 focus:ring-primary-500"
+                          aria-label={published ? 'Ակտիվ' : 'Սևագիր'}
+                        />
+                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${published ? 'bg-green-100 text-green-800' : 'bg-neutral-200 text-neutral-700'}`}>
+                          {published ? 'Ակտիվ' : 'Սևագիր'}
+                        </span>
+                        {isUpdatingStatus && <span className="inline-block w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />}
+                      </label>
+                    </td>
+                    <td className="px-3 py-2">
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${product.isAvailable ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                        {product.isAvailable ? 'Առկա' : 'Չի վաճառվում'}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-sm font-medium">{(product.stock || 0)}</td>
+                    <td className="px-3 py-2">
+                      <div className="flex items-center justify-center gap-1">
+                        <Link
+                          href={`/admin/products/${product.id}/edit`}
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                          title="Խմբագրել"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Link>
+                        <button
+                          onClick={() => setProductToDelete(product.id)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                          title="Ջնջել"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
         </div>
+
+        {products.length === 0 && !isLoading && (
+          <div className="text-center py-12 text-neutral-500">
+            <Package className="h-12 w-12 mx-auto mb-4 text-neutral-300" />
+            <p>Ապրանքներ չեն գտնվել</p>
+          </div>
+        )}
+
+        {pagination.totalPages > 1 && (
+          <div className="p-4 border-t border-neutral-200">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={pagination.totalPages}
+              onPageChange={handlePageChange}
+              itemsPerPage={pagination.itemsPerPage}
+              totalItems={pagination.totalItems}
+              itemsLabel="արտադրանքից"
+            />
+          </div>
+        )}
       </div>
-      
-      {/* Hide Footer on Mobile and Tablet */}
-      <div className="hidden lg:block">
-        <Footer />
-      </div>
+
+      <ConfirmModal
+        isOpen={bulkDeleteConfirmOpen}
+        onClose={() => !bulkDeleting && setBulkDeleteConfirmOpen(false)}
+        onConfirm={handleBulkDelete}
+        title="Խմբային ջնջում"
+        message={`Հեռացնել ${selectedIds.size} ապրանք(ներ)։ Գործողությունը հնարավոր չէ հետարկել։`}
+        confirmLabel="Ջնջել"
+        cancelLabel="Չեղարկել"
+        variant="danger"
+        isLoading={bulkDeleting}
+      />
+
+      <ConfirmModal
+        isOpen={productToDelete !== null}
+        onClose={() => !singleDeleting && setProductToDelete(null)}
+        onConfirm={handleSingleDeleteConfirm}
+        title="Ջնջել ապրանքը"
+        message="Ապրանքը կհեռացվի ընդմիշտ։ Գործողությունը հնարավոր չէ հետարկել։"
+        confirmLabel="Ջնջել"
+        cancelLabel="Չեղարկել"
+        variant="danger"
+        isLoading={singleDeleting}
+      />
+
+      <ConfirmModal
+        isOpen={bulkStatusConfirm === 'active'}
+        onClose={() => !bulkStatusLoading && setBulkStatusConfirm(null)}
+        onConfirm={() => handleBulkStatus('active')}
+        title="Դնել ակտիվ"
+        message={`Ընտրված ${selectedIds.size} ապրանք(ներ) կդրվեն ակտիվ (տեսանելի հաճախորդների համար)։`}
+        confirmLabel="Հաստատել"
+        cancelLabel="Չեղարկել"
+        variant="default"
+        isLoading={bulkStatusLoading}
+      />
+
+      <ConfirmModal
+        isOpen={bulkStatusConfirm === 'draft'}
+        onClose={() => !bulkStatusLoading && setBulkStatusConfirm(null)}
+        onConfirm={() => handleBulkStatus('draft')}
+        title="Դնել սևագիր"
+        message={`Ընտրված ${selectedIds.size} ապրանք(ներ) կդրվեն սևագրի (թաքնված հաճախորդներից)։`}
+        confirmLabel="Հաստատել"
+        cancelLabel="Չեղարկել"
+        variant="default"
+        isLoading={bulkStatusLoading}
+      />
     </div>
   )
 }

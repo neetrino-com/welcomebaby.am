@@ -15,7 +15,8 @@ export async function GET(
       prisma.product.findUnique({
         where: {
           id,
-          isAvailable: true
+          isAvailable: true,
+          published: true
         },
         select: {
           id: true,
@@ -42,6 +43,7 @@ export async function GET(
       prisma.product.findMany({
         where: {
           isAvailable: true,
+          published: true,
           id: { not: id }
         },
         select: {

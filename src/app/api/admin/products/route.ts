@@ -31,6 +31,8 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || ''
     const category = searchParams.get('category') || ''
     const status = searchParams.get('status') || ''
+    const visibility = searchParams.get('visibility') || '' // active | draft
+    const sortBy = searchParams.get('sortBy') || '' // price_asc | price_desc
 
     // Валидация параметров
     const pageNum = Math.max(1, page)
@@ -53,7 +55,7 @@ export async function GET(request: NextRequest) {
       whereClause.categoryId = category
     }
 
-    // Фильтр по статусу
+    // Фильтр по статусу (тип товара: HIT, NEW, ...)
     if (status === 'special') {
       whereClause.status = {
         in: ['HIT', 'NEW', 'CLASSIC', 'BANNER']
@@ -62,17 +64,31 @@ export async function GET(request: NextRequest) {
       whereClause.status = status
     }
 
+    // Фильтр по видимости (active = опубликован, draft = черновик)
+    if (visibility === 'draft') {
+      whereClause.published = false
+    } else if (visibility === 'active') {
+      whereClause.published = true
+    }
+
     // Получаем общее количество товаров (для пагинации)
     const total = await prisma.product.count({
       where: whereClause
     })
+
+    // Сортировка
+    const orderBy = sortBy === 'price_asc'
+      ? { price: 'asc' as const }
+      : sortBy === 'price_desc'
+        ? { price: 'desc' as const }
+        : { createdAt: 'desc' as const }
 
     // Получаем товары с пагинацией
     const products = await prisma.product.findMany({
       where: whereClause,
       skip,
       take: limitNum,
-      orderBy: { createdAt: 'desc' },
+      orderBy,
       include: {
         category: {
           select: {
@@ -192,7 +208,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Создаем товар
+    // Создаем товар (по умолчанию опубликован — active)
     const product = await prisma.product.create({
       data: {
         name,
@@ -200,12 +216,13 @@ export async function POST(request: NextRequest) {
         price,
         salePrice: salePrice === null || salePrice === '' ? null : salePrice,
         categoryId,
-        image: image && image.trim() !== '' ? image : null, // Используем null по умолчанию
-        images: images || null, // Дополнительные изображения (JSON строка)
-        ingredients: Array.isArray(ingredients) ? JSON.stringify(ingredients) : (ingredients || ''), // Преобразуем массив в строку JSON или используем строку
+        image: image && image.trim() !== '' ? image : null,
+        images: images || null,
+        ingredients: Array.isArray(ingredients) ? JSON.stringify(ingredients) : (ingredients || ''),
         isAvailable,
-        stock: typeof stock === 'number' ? stock : 10, // Устанавливаем stock, по умолчанию 10
-        status: status || 'REGULAR' // Если статус не выбран, то REGULAR
+        stock: typeof stock === 'number' ? stock : 10,
+        status: status || 'REGULAR',
+        published: true
       },
       include: {
         category: {

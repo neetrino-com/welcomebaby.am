@@ -95,7 +95,7 @@ export async function PUT(
 
     // Получаем данные из запроса
     const body = await request.json()
-    const { name, description, price, salePrice, categoryId, image, images, ingredients, isAvailable, status } = body
+    const { name, description, price, salePrice, categoryId, image, images, ingredients, isAvailable, status, published } = body
     
     console.log('Update product data:', { id, name, description, price, salePrice, categoryId, image, images, ingredients, isAvailable, status })
 
@@ -170,11 +170,12 @@ export async function PUT(
         ...(price !== undefined && { price }),
         ...(salePrice !== undefined && { salePrice: salePrice === null || salePrice === '' ? null : salePrice }),
         ...(categoryId && { categoryId }),
-        ...(image !== undefined && { image: (image && image.trim() !== '' && image !== 'no-image') ? image : null }), // Сохраняем null для отсутствия изображения
-        ...(images !== undefined && { images }), // Дополнительные изображения (JSON строка)
+        ...(image !== undefined && { image: (image && image.trim() !== '' && image !== 'no-image') ? image : null }),
+        ...(images !== undefined && { images }),
         ...(ingredients && { ingredients }),
         ...(isAvailable !== undefined && { isAvailable }),
-        ...(status !== undefined && { status: status || 'REGULAR' }) // Если статус пустой, то REGULAR
+        ...(status !== undefined && { status: status || 'REGULAR' }),
+        ...(published !== undefined && { published: !!published })
       },
       include: {
         category: {
@@ -215,5 +216,32 @@ export async function PUT(
       },
       { status: 500 }
     )
+  }
+}
+
+// DELETE /api/admin/products/[id] — безвозвратное удаление (только для админов)
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user || session.user.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { id } = await params
+    if (!id) {
+      return NextResponse.json({ error: 'Product ID is required' }, { status: 400 })
+    }
+
+    await prisma.product.delete({ where: { id } })
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    if (error && typeof error === 'object' && 'code' in error && (error as { code: string }).code === 'P2025') {
+      return NextResponse.json({ error: 'Product not found' }, { status: 404 })
+    }
+    console.error('Error deleting product:', error)
+    return NextResponse.json({ error: 'Failed to delete product' }, { status: 500 })
   }
 }
