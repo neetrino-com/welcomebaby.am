@@ -26,7 +26,7 @@ import {
   DollarSign
 } from 'lucide-react'
 import Pagination from '@/components/Pagination'
-import AdminTabs from '@/components/admin/AdminTabs'
+import AdminTabs from '@/components/admin/Tabs'
 import BulkActionsBar from '@/components/admin/BulkActionsBar'
 import ConfirmModal from '@/components/admin/ConfirmModal'
 
@@ -645,17 +645,18 @@ export default function AdminOrdersPage() {
           document.body
         )}
 
-      <ConfirmModal
-        isOpen={bulkConfirmOpen}
-        onClose={() => !bulkDeleting && setBulkConfirmOpen(false)}
-        onConfirm={handleBulkDelete}
-        title="Խմբային ջնջում"
-        message={`Հեռացնել ${selectedIds.size} պատվեր(ներ)։ Գործողությունը հնարավոր չէ հետարկել։`}
-        confirmLabel="Ջնջել"
-        cancelLabel="Չեղարկել"
-        variant="danger"
-        isLoading={bulkDeleting}
-      />
+        <ConfirmModal
+          isOpen={bulkConfirmOpen}
+          onClose={() => !bulkDeleting && setBulkConfirmOpen(false)}
+          onConfirm={handleBulkDelete}
+          title="Խմբային ջնջում"
+          message={`Հեռացնել ${selectedIds.size} պատվեր(ներ)։ Գործողությունը հնարավոր չէ հետարկել։`}
+          confirmLabel="Ջնջել"
+          cancelLabel="Չեղարկել"
+          variant="danger"
+          isLoading={bulkDeleting}
+        />
+      </div>
     </div>
   )
 }
