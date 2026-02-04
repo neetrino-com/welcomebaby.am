@@ -20,58 +20,58 @@ export default function OrderSuccessPage() {
           
           {/* Success Message */}
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Заказ успешно оформлен!
+            Պատվերը հաջողությամբ ձևակերպվեց
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            Спасибо за ваш заказ! Мы получили вашу заявку и скоро свяжемся с вами для подтверждения.
+            Շնորհակալություն պատվերի համար։ Մենք ստացել ենք ձեր պատվերը և շուտով կապ կհաստատենք հաստատման համար։
           </p>
           
           {/* Order Info */}
           <div className="bg-white rounded-2xl shadow-lg p-8 mb-8 max-w-2xl mx-auto">
-            <h2 className="text-2xl font-semibold text-gray-900 mb-6">Что дальше?</h2>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-6">Ի՞նչ հաջորդում է</h2>
             
             <div className="space-y-6">
               <div className="flex items-start space-x-4">
-                <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <Clock className="h-4 w-4 text-orange-500" />
+                <div className="w-8 h-8 bg-primary-50 rounded-full flex items-center justify-center flex-shrink-0">
+                  <Clock className="h-4 w-4 text-primary-500" />
                 </div>
                 <div className="text-left">
-                  <h3 className="font-semibold text-gray-900 mb-1">Подтверждение заказа</h3>
-                  <p className="text-gray-600">Мы позвоним вам в течение 5 минут для подтверждения деталей заказа</p>
+                  <h3 className="font-semibold text-gray-900 mb-1">Պատվերի հաստատում</h3>
+                  <p className="text-gray-600">Մենք ձեզ կզանգենք 5 րոպեի ընթացքում պատվերի մանրամասները հաստատելու համար</p>
                 </div>
               </div>
               
               <div className="flex items-start space-x-4">
-                <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <CheckCircle className="h-4 w-4 text-orange-500" />
+                <div className="w-8 h-8 bg-primary-50 rounded-full flex items-center justify-center flex-shrink-0">
+                  <CheckCircle className="h-4 w-4 text-primary-500" />
                 </div>
                 <div className="text-left">
-                  <h3 className="font-semibold text-gray-900 mb-1">Приготовление</h3>
-                  <p className="text-gray-600">Ваш заказ будет готов через 15-20 минут</p>
+                  <h3 className="font-semibold text-gray-900 mb-1">Պատրաստում</h3>
+                  <p className="text-gray-600">Ձեր պատվերը կպատրաստվի 15-20 րոպեի ընթացքում</p>
                 </div>
               </div>
               
               <div className="flex items-start space-x-4">
-                <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <Phone className="h-4 w-4 text-orange-500" />
+                <div className="w-8 h-8 bg-primary-50 rounded-full flex items-center justify-center flex-shrink-0">
+                  <Phone className="h-4 w-4 text-primary-500" />
                 </div>
                 <div className="text-left">
-                  <h3 className="font-semibold text-gray-900 mb-1">Доставка</h3>
-                  <p className="text-gray-600">Курьер доставит заказ по указанному адресу в выбранное время</p>
+                  <h3 className="font-semibold text-gray-900 mb-1">Առաքում</h3>
+                  <p className="text-gray-600">Կուրիերը կառաքի պատվերը նշված հասցեով ընտրված ժամին</p>
                 </div>
               </div>
             </div>
           </div>
           
           {/* Contact Info */}
-          <div className="bg-orange-50 rounded-2xl p-6 mb-8 max-w-2xl mx-auto">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Нужна помощь?</h3>
+          <div className="bg-primary-50 rounded-2xl p-6 mb-8 max-w-2xl mx-auto">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Օգնությա՞ն կարիք ունեք</h3>
             <p className="text-gray-600 mb-4">
-              Если у вас есть вопросы по заказу, звоните нам:
+              Եթե հարցեր ունեք պատվերի վերաբերյալ, զանգահարեք մեզ՝
             </p>
             <a 
               href="tel:+37495044888"
-              className="inline-flex items-center text-orange-600 hover:text-orange-700 font-semibold text-lg"
+              className="inline-flex items-center text-primary-600 hover:text-primary-700 font-semibold text-lg"
             >
               <Phone className="h-5 w-5 mr-2" />
               +374 95-044-888
@@ -82,17 +82,17 @@ export default function OrderSuccessPage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link 
               href="/products"
-              className="inline-flex items-center bg-orange-500 text-white px-8 py-4 rounded-xl font-semibold hover:bg-orange-600 transition-colors text-lg"
+              className="inline-flex items-center bg-primary-500 text-white px-8 py-4 rounded-xl font-semibold hover:bg-primary-600 transition-colors text-lg"
             >
-              Заказать еще
+              Կատարել ևս պատվեր
               <ArrowRight className="h-5 w-5 ml-2" />
             </Link>
             
             <Link 
               href="/"
-              className="inline-flex items-center border-2 border-orange-500 text-orange-500 px-8 py-4 rounded-xl font-semibold hover:bg-orange-500 hover:text-white transition-colors text-lg"
+              className="inline-flex items-center border-2 border-primary-500 text-primary-500 px-8 py-4 rounded-xl font-semibold hover:bg-primary-500 hover:text-white transition-colors text-lg"
             >
-              На главную
+              Գլխավոր էջ
             </Link>
           </div>
         </div>

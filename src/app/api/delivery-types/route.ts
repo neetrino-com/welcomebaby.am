@@ -3,10 +3,14 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 
-// GET /api/delivery-types - получить все типы доставки
-export async function GET() {
+// GET /api/delivery-types - получить типы доставки (?activeOnly=true - только активные для checkout)
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url)
+    const activeOnly = searchParams.get('activeOnly') === 'true'
+
     const deliveryTypes = await prisma.deliveryType.findMany({
+      where: activeOnly ? { isActive: true } : undefined,
       orderBy: { createdAt: 'desc' }
     })
 

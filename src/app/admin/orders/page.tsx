@@ -505,16 +505,17 @@ export default function AdminOrdersPage() {
 
         {showModal && selectedOrder && typeof document !== 'undefined' && createPortal(
           <div
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            className="fixed inset-0 z-[100] overflow-y-auto p-4 bg-black/50 backdrop-blur-sm"
             onClick={closeModal}
             role="dialog"
             aria-modal="true"
             aria-labelledby="order-details-title"
           >
-            <div
-              className="relative bg-white rounded-2xl shadow-2xl border border-neutral-200 w-full max-w-4xl max-h-[90vh] flex flex-col"
-              onClick={(e) => e.stopPropagation()}
-            >
+            <div className="flex min-h-full items-center justify-center">
+              <div
+                className="relative bg-white rounded-2xl shadow-2xl border border-neutral-200 w-full max-w-4xl max-h-[calc(100vh-2rem)] flex flex-col my-auto"
+                onClick={(e) => e.stopPropagation()}
+              >
               <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-neutral-200 rounded-t-2xl bg-white">
                 <h2 id="order-details-title" className="text-xl font-semibold text-neutral-900">
                   Պատվեր #{selectedOrder.id.slice(-8)}
@@ -639,6 +640,7 @@ export default function AdminOrdersPage() {
                     ))}
                   </div>
                 </div>
+              </div>
               </div>
             </div>
           </div>,

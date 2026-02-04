@@ -15,10 +15,7 @@ import {
   Edit,
   Trash2,
   LogOut,
-  ChevronLeft,
 } from 'lucide-react'
-import Footer from '@/components/Footer'
-import SidebarLayout, { type SidebarNavItem } from '@/components/SidebarLayout'
 import EditProfileModal from '@/components/EditProfileModal'
 import DeleteAccountModal from '@/components/DeleteAccountModal'
 import { formatPrice } from '@/utils/priceUtils'
@@ -28,11 +25,10 @@ interface Order {
   status: string
   total: number
   createdAt: string
-  items: Array<{
-    product: {
-      name: string
-      image: string
-    }
+  itemCount?: number
+  firstItemName?: string | null
+  items?: Array<{
+    product: { name: string; image: string }
     quantity: number
     price: number
   }>
@@ -77,10 +73,11 @@ export default function ProfilePage() {
 
   const fetchOrders = async () => {
     try {
-      const response = await fetch('/api/orders')
+      const response = await fetch('/api/orders?page=1&pageSize=20')
       if (response.ok) {
         const data = await response.json()
-        setOrders(data)
+        const list = Array.isArray(data?.items) ? data.items : []
+        setOrders(list)
       }
     } catch (error) {
       console.error('Error fetching orders:', error)
@@ -227,61 +224,9 @@ export default function ProfilePage() {
     return null
   }
 
-  const profileNavItems: SidebarNavItem[] = [
-    { href: '#profile', label: 'Պրոֆիլ', icon: User },
-    { href: '#orders', label: 'Պատվերներ', icon: Package },
-  ]
-
   return (
     <Fragment>
-    <SidebarLayout
-      sidebarTitle="Հաշիվ"
-      headerTitle="Իմ պրոֆիլը"
-      navItems={profileNavItems}
-      sidebarHeader={
-        <div className="p-4">
-          <div className="flex items-center gap-3">
-            <div
-              className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ backgroundColor: '#f3d98c' }}
-            >
-              <User className="h-6 w-6" style={{ color: '#002c45' }} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="font-semibold text-white truncate">{userProfile.name || 'Օգտատեր'}</p>
-              <p className="text-sm text-white/70 truncate">{userProfile.email}</p>
-            </div>
-          </div>
-        </div>
-      }
-      sidebarFooter={
-        <div className="space-y-1">
-          <Link
-            href="/"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
-          >
-            <ChevronLeft className="h-5 w-5" />
-            Դեպի կայք
-          </Link>
-          <button
-            onClick={() => signOut({ callbackUrl: '/' })}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
-          >
-            <LogOut className="h-5 w-5" />
-            Ելք հաշվից
-          </button>
-          <button
-            onClick={() => setIsDeleteModalOpen(true)}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/60 hover:bg-red-500/20 hover:text-red-300 transition-colors"
-          >
-            <Trash2 className="h-5 w-5" />
-            Ջնջել հաշիվը
-          </button>
-        </div>
-      }
-      mainClassName="pb-20 lg:pb-8"
-    >
-      <div className="max-w-5xl mx-auto space-y-8">
+      <div className="max-w-5xl mx-auto space-y-8 p-4 md:p-6">
             {/* Profile card */}
             <section id="profile" className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
               <div className="p-4 md:p-6">
@@ -379,24 +324,25 @@ export default function ProfilePage() {
                             </div>
                           </div>
                           <div className="space-y-2">
-                            {order.items.map((item, index) => (
-                              <div
-                                key={index}
-                                className="flex items-center gap-3 py-2 border-t border-gray-200/80 first:border-t-0"
-                              >
+                            {Array.isArray(order.items) && order.items.length > 0 ? (
+                              order.items.map((item, index) => (
                                 <div
-                                  className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0"
-                                  style={{ backgroundColor: '#f3d98c' + '40' }}
+                                  key={index}
+                                  className="flex items-center gap-3 py-2 border-t border-gray-200/80 first:border-t-0"
                                 >
-                                  {item.product.image ? (
-                                    <img
-                                      src={item.product.image}
-                                      alt={item.product.name}
-                                      className="w-full h-full object-cover"
-                                    />
-                                  ) : (
-                                    <Package className="h-5 w-5" style={{ color: '#002c45' }} />
-                                  )}
+                                  <div
+                                    className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0"
+                                    style={{ backgroundColor: '#f3d98c' + '40' }}
+                                  >
+                                    {item.product?.image ? (
+                                      <img
+                                        src={item.product.image}
+                                        alt={item.product.name}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    ) : (
+                                      <Package className="h-5 w-5" style={{ color: '#002c45' }} />
+                                    )}
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <p className="font-medium text-gray-900 text-sm truncate">{item.product.name}</p>
@@ -408,7 +354,16 @@ export default function ProfilePage() {
                                   {formatPrice(item.quantity * item.price)} ֏
                                 </p>
                               </div>
-                            ))}
+                            ))
+                            ) : (
+                              <div className="flex items-center gap-3 py-2">
+                                <Package className="h-5 w-5 text-gray-400 flex-shrink-0" />
+                                <p className="text-gray-600 text-sm">
+                                  {order.firstItemName || 'Պատվեր'}
+                                  {(order.itemCount ?? 0) > 1 ? ` +${(order.itemCount ?? 0) - 1}` : ''}
+                                </p>
+                              </div>
+                            )}
                           </div>
                         </div>
                       )
@@ -417,11 +372,24 @@ export default function ProfilePage() {
                 )}
               </div>
             </section>
-          </div>
-    </SidebarLayout>
 
-      <div className="hidden lg:block">
-        <Footer />
+        {/* Account actions */}
+        <div className="flex flex-wrap gap-3 pt-4">
+          <button
+            onClick={() => signOut({ callbackUrl: '/' })}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-neutral-600 hover:bg-neutral-100 transition-colors"
+          >
+            <LogOut className="h-4 w-4" />
+            Ելք հաշվից
+          </button>
+          <button
+            onClick={() => setIsDeleteModalOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+          >
+            <Trash2 className="h-4 w-4" />
+            Ջնջել հաշիվը
+          </button>
+        </div>
       </div>
 
       <EditProfileModal

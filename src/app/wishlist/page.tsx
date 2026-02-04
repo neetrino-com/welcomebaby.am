@@ -174,7 +174,7 @@ function WishlistContent() {
                 {/* Изображение */}
                 <div className="relative h-64 bg-gray-100">
                   <Link href={`/products/${item.product.id}`}>
-                    {item.product.image && item.product.image !== 'no-image' ? (
+                    {item.product.image && item.product.image !== 'no-image' && isValidImagePath(item.product.image) ? (
                       <Image
                         src={item.product.image}
                         alt={item.product.name}

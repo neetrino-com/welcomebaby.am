@@ -63,20 +63,22 @@ model Product {
 }
 
 model Order {
-  id            String      @id @default(cuid())
-  userId        String?
-  status        OrderStatus @default(PENDING)
-  total         Float
-  address       String
-  phone         String
-  notes         String?
-  paymentMethod String
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  deliveryTime  String?
-  name          String      @default("Unknown Customer")
-  items         OrderItem[]
-  user          User?       @relation(fields: [userId], references: [id])
+  id              String        @id @default(cuid())
+  userId          String?
+  status          OrderStatus   @default(PENDING)
+  total           Float
+  address         String
+  phone           String
+  notes           String?
+  paymentMethod   String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  deliveryTime    String?
+  deliveryTypeId  String?
+  name            String        @default("Unknown Customer")
+  items           OrderItem[]
+  user            User?         @relation(fields: [userId], references: [id])
+  deliveryType    DeliveryType? @relation(fields: [deliveryTypeId], references: [id])
 
   @@map("orders")
 }
@@ -115,6 +117,7 @@ model DeliveryType {
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  orders       Order[]
 
   @@map("delivery_types")
 }

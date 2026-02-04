@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, MapPin, Clock, CreditCard, Phone, User } from 'lucide-react'
+import { ArrowLeft, MapPin, Clock, CreditCard, Phone, User, Truck } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
 import { useSession } from 'next-auth/react'
 import Footer from '@/components/Footer'
@@ -17,32 +17,41 @@ interface UserProfile {
   address: string | null
 }
 
+interface DeliveryType {
+  id: string
+  name: string
+  deliveryTime: string
+  description: string
+  price: number
+  isActive: boolean
+}
+
 export default function CheckoutPage() {
   const router = useRouter()
   const { items, getTotalPrice, clearCart, validateCart } = useCart()
   const { data: session, status } = useSession()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
+  const [deliveryTypes, setDeliveryTypes] = useState<DeliveryType[]>([])
   
   // Form state
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
     address: '',
-    deliveryTime: 'asap', // Дефолтное значение "Как можно скорее"
+    deliveryTime: 'asap',
+    deliveryTypeId: '',
     paymentMethod: 'cash',
     notes: ''
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  // Функция для расчета стоимости доставки
+  // Стоимость доставки из выбранного типа
   const getDeliveryPrice = () => {
-    const total = getTotalPrice()
-    if (total >= 10000) {
-      return 0 // Бесплатная доставка от 10000 ֏
-    }
-    return 1000 // Стандартная стоимость доставки
+    if (!formData.deliveryTypeId) return 0
+    const dt = deliveryTypes.find(d => d.id === formData.deliveryTypeId)
+    return dt ? dt.price : 0
   }
 
   // Redirect if cart is empty and validate cart
@@ -95,6 +104,26 @@ export default function CheckoutPage() {
     loadUserProfile()
   }, [session, status])
 
+  // Загрузка типов доставки (только активные)
+  useEffect(() => {
+    const fetchDeliveryTypes = async () => {
+      try {
+        const res = await fetch('/api/delivery-types?activeOnly=true')
+        if (res.ok) {
+          const json = await res.json()
+          const list: DeliveryType[] = json.data || []
+          setDeliveryTypes(list)
+          if (list.length > 0) {
+            setFormData(prev => (prev.deliveryTypeId ? prev : { ...prev, deliveryTypeId: list[0].id }))
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching delivery types:', err)
+      }
+    }
+    fetchDeliveryTypes()
+  }, [])
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({
@@ -111,27 +140,43 @@ export default function CheckoutPage() {
     }
   }
 
-  const validateForm = () => {
+  const scrollToFirstError = (firstErrorKey: 'name' | 'phone' | 'address') => {
+    const mobileEl = document.getElementById(`checkout-field-${firstErrorKey}-mobile`)
+    const desktopEl = document.getElementById(`checkout-field-${firstErrorKey}-desktop`)
+    const el = (mobileEl?.offsetParent ? mobileEl : null) ?? (desktopEl?.offsetParent ? desktopEl : null) ?? mobileEl ?? desktopEl
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }
+
+  const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {}
 
     if (!formData.name.trim()) {
-      newErrors.name = 'Имя обязательно'
+      newErrors.name = 'Անունը պարտադիր է'
     }
 
     if (!formData.phone.trim()) {
-      newErrors.phone = 'Телефон обязателен'
+      newErrors.phone = 'Հեռախոսը պարտադիր է'
     } else if (!/^\+?[0-9\s\-\(\)]{10,}$/.test(formData.phone)) {
-      newErrors.phone = 'Неверный формат телефона'
+      newErrors.phone = 'Հեռախոսի սխալ ձևաչափ'
     }
 
     if (!formData.address.trim()) {
-      newErrors.address = 'Адрес обязателен'
+      newErrors.address = 'Հասցեն պարտադիր է'
     }
 
-    // Время доставки уже имеет дефолтное значение, валидация не нужна
-
     setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
+    const isValid = Object.keys(newErrors).length === 0
+    if (!isValid) {
+      const firstKey = (['name', 'phone', 'address'] as const).find(k => newErrors[k])
+      if (firstKey) {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => scrollToFirstError(firstKey))
+        })
+      }
+    }
+    return isValid
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -157,12 +202,13 @@ export default function CheckoutPage() {
       // Send order to API
       const orderData = {
         ...formData,
+        deliveryTypeId: formData.deliveryTypeId || null,
         items: items.map(item => ({
           productId: item.product.id,
           quantity: item.quantity,
           price: item.product.salePrice || item.product.price
         })),
-        total: getTotalPrice()
+        total: getTotalPrice() + getDeliveryPrice()
       }
 
       const response = await fetch('/api/orders', {
@@ -191,7 +237,7 @@ export default function CheckoutPage() {
       window.location.href = '/order-success'
     } catch (error) {
       console.error('Error submitting order:', error)
-      alert('Произошла ошибка при оформлении заказа. Попробуйте еще раз.')
+      alert('Պատվերի ձևակերպման ժամանակ սխալ է տեղի ունեցել: Խնդրում ենք կրկին փորձել։')
     } finally {
       setIsSubmitting(false)
     }
@@ -218,9 +264,9 @@ export default function CheckoutPage() {
               className="flex items-center text-gray-600 hover:text-orange-500 transition-colors"
             >
               <ArrowLeft className="h-6 w-6 mr-2" />
-              <span className="text-lg font-medium">к корзине</span>
+              <span className="text-lg font-medium">զամբյուղ</span>
             </Link>
-            <h1 className="text-2xl font-bold text-gray-900">оформление</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Պատվերի ձևակերպում</h1>
           </div>
         </div>
 
@@ -231,10 +277,10 @@ export default function CheckoutPage() {
             className="flex items-center text-gray-600 hover:text-orange-500 transition-colors"
           >
             <ArrowLeft className="h-5 w-5 mr-2" />
-            Назад к корзине
+            Վերադառնալ զամբյուղ
           </Link>
           <div className="h-8 w-px bg-gray-300"></div>
-          <h1 className="text-3xl font-bold text-gray-900">Оформление заказа</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Պատվերի ձևակերպում</h1>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -243,20 +289,20 @@ export default function CheckoutPage() {
             {/* Mobile Order Form */}
             <div className="bg-white rounded-2xl shadow-lg p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">Данные для доставки</h2>
+                <h2 className="text-lg font-semibold text-gray-900">Առաքման տվյալներ</h2>
                 {!session && (
                   <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
-                    Гостевой заказ
+                    Հյուրի պատվեր
                   </span>
                 )}
               </div>
                 
               <div className="space-y-4">
                 {/* Name */}
-                <div>
+                <div id="checkout-field-name-mobile">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     <User className="inline h-4 w-4 mr-1" />
-                    Имя *
+                    Անուն *
                   </label>
                   <input
                     type="text"
@@ -266,16 +312,16 @@ export default function CheckoutPage() {
                     className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors text-gray-900 ${
                       errors.name ? 'border-red-500' : 'border-gray-300'
                     }`}
-                    placeholder="Введите ваше имя"
+                    placeholder="Մուտքագրեք ձեր անունը"
                   />
                   {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
                 </div>
 
                 {/* Phone */}
-                <div>
+                <div id="checkout-field-phone-mobile">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     <Phone className="inline h-4 w-4 mr-1" />
-                    Телефон *
+                    Հեռախոս *
                   </label>
                   <input
                     type="tel"
@@ -291,10 +337,10 @@ export default function CheckoutPage() {
                 </div>
 
                 {/* Address */}
-                <div>
+                <div id="checkout-field-address-mobile">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     <MapPin className="inline h-4 w-4 mr-1" />
-                    Адрес доставки *
+                    Առաքման հասցե *
                   </label>
                   <textarea
                     name="address"
@@ -304,16 +350,61 @@ export default function CheckoutPage() {
                     className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors resize-none text-gray-900 ${
                       errors.address ? 'border-red-500' : 'border-gray-300'
                     }`}
-                    placeholder="Укажите полный адрес доставки"
+                    placeholder="Նշեք ամբողջական հասցեն"
                   />
                   {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address}</p>}
                 </div>
+
+                {/* Delivery Type */}
+                {deliveryTypes.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <Truck className="inline h-4 w-4 mr-1" />
+                      Առաքման տեսակ *
+                    </label>
+                    <div className="space-y-3">
+                      {deliveryTypes.map((dt) => (
+                        <label
+                          key={dt.id}
+                          className={`relative flex p-4 border-2 rounded-xl cursor-pointer transition-all duration-300 ${
+                            formData.deliveryTypeId === dt.id
+                              ? 'border-primary-500 bg-primary-50'
+                              : 'border-gray-300'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="deliveryTypeId"
+                            value={dt.id}
+                            checked={formData.deliveryTypeId === dt.id}
+                            onChange={handleInputChange}
+                            className="sr-only"
+                          />
+                          <div className="flex-1">
+                            <div className="font-semibold text-gray-900">{dt.name}</div>
+                            <div className="text-sm text-gray-600">{dt.description}</div>
+                            <div className="text-sm font-medium text-gray-700 mt-1">
+                              {dt.price === 0 ? 'Անվճար' : `${formatPrice(dt.price)} ֏`}
+                            </div>
+                          </div>
+                          {formData.deliveryTypeId === dt.id && (
+                            <div className="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center flex-shrink-0">
+                              <svg className="h-4 w-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                          )}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Delivery Time */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     <Clock className="inline h-4 w-4 mr-1" />
-                    Время доставки *
+                    Առաքման ժամ *
                   </label>
                   <select
                     name="deliveryTime"
@@ -321,7 +412,7 @@ export default function CheckoutPage() {
                     onChange={handleInputChange}
                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors text-gray-900"
                   >
-                    <option value="asap">Как можно скорее (20-30 мин)</option>
+                    <option value="asap">Որքան հնարավոր է շուտ (20-30 րոպե)</option>
                     <option value="11:00-12:00">11:00 - 12:00</option>
                     <option value="12:00-13:00">12:00 - 13:00</option>
                     <option value="13:00-14:00">13:00 - 14:00</option>
@@ -340,11 +431,11 @@ export default function CheckoutPage() {
 
             {/* Mobile Payment Method */}
             <div className="bg-white rounded-2xl shadow-lg p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Способ оплаты</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Վճարման եղանակ</h2>
               <div className="space-y-4">
                 <label className={`relative p-4 border-2 rounded-xl cursor-pointer transition-all duration-300 ${
                   formData.paymentMethod === 'cash' 
-                    ? 'border-orange-500 bg-orange-50' 
+                    ? 'border-primary-500 bg-primary-50' 
                     : 'border-gray-300'
                 }`}>
                   <input
@@ -362,11 +453,11 @@ export default function CheckoutPage() {
                       </svg>
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-base font-semibold text-gray-900">Наличные</h3>
-                      <p className="text-sm text-gray-600">Оплата курьеру наличными</p>
+                      <h3 className="text-base font-semibold text-gray-900">Կանխիկ</h3>
+                      <p className="text-sm text-gray-600">Վճարում կուրիերին կանխիկ</p>
                     </div>
                     {formData.paymentMethod === 'cash' && (
-                      <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
+                      <div className="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center">
                         <svg className="h-4 w-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
@@ -377,7 +468,7 @@ export default function CheckoutPage() {
                 
                 <label className={`relative p-4 border-2 rounded-xl cursor-pointer transition-all duration-300 ${
                   formData.paymentMethod === 'card' 
-                    ? 'border-orange-500 bg-orange-50' 
+                    ? 'border-primary-500 bg-primary-50' 
                     : 'border-gray-300'
                 }`}>
                   <input
@@ -393,11 +484,11 @@ export default function CheckoutPage() {
                       <CreditCard className="h-6 w-6 text-blue-600" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-base font-semibold text-gray-900">Карта</h3>
-                      <p className="text-sm text-gray-600">Оплата картой через терминал</p>
+                      <h3 className="text-base font-semibold text-gray-900">Քարտ</h3>
+                      <p className="text-sm text-gray-600">Վճարում քարտով տերմինալով</p>
                     </div>
                     {formData.paymentMethod === 'card' && (
-                      <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
+                      <div className="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center">
                         <svg className="h-4 w-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
@@ -410,27 +501,27 @@ export default function CheckoutPage() {
 
             {/* Mobile Notes */}
             <div className="bg-white rounded-2xl shadow-lg p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Комментарий</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Մեկնաբանություն</h2>
               <textarea
                 name="notes"
                 value={formData.notes}
                 onChange={handleInputChange}
                 rows={3}
                 className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors resize-none text-gray-900"
-                placeholder="Дополнительные пожелания к заказу..."
+                placeholder="Լրացուցիչ ցանկություններ պատվերի համար..."
               />
             </div>
 
             {/* Mobile Order Summary */}
             <div className="bg-white rounded-2xl shadow-lg p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Ваш заказ</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Ձեր պատվերը</h2>
               
               <div className="space-y-3 mb-6">
                 {items.map((item) => (
                   <div key={item.product.id} className="flex justify-between items-center py-2">
                     <div className="flex-1">
                       <div className="font-medium text-gray-900 text-sm">{item.product.name}</div>
-                      <div className="text-xs text-gray-600">{item.quantity} шт.</div>
+                      <div className="text-xs text-gray-600">{item.quantity} հատ</div>
                     </div>
                     <div className="font-semibold text-gray-900 text-sm">
                       {formatPrice(item.product.price * item.quantity)} ֏
@@ -441,16 +532,16 @@ export default function CheckoutPage() {
                 <div className="border-t border-gray-300 pt-3">
                   <div className="space-y-2">
                     <div className="flex justify-between text-gray-600">
-                      <span>Товары</span>
+                      <span>Արտադրանք</span>
                       <span>{formatPrice(getTotalPrice())} ֏</span>
                     </div>
                     <div className="flex justify-between text-gray-600">
-                      <span>Доставка</span>
-                      <span>{getDeliveryPrice()} ֏</span>
+                      <span>Առաքում</span>
+                      <span>{getDeliveryPrice() === 0 ? 'Անվճար' : `${formatPrice(getDeliveryPrice())} ֏`}</span>
                     </div>
                     <div className="flex justify-between text-lg font-bold text-gray-900 border-t border-gray-300 pt-2">
-                      <span>Итого</span>
-                      <span>{formatPrice(getTotalPrice())} ֏</span>
+                      <span>Ընդամենը</span>
+                      <span>{formatPrice(getTotalPrice() + getDeliveryPrice())} ֏</span>
                     </div>
                   </div>
                 </div>
@@ -459,17 +550,17 @@ export default function CheckoutPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full bg-orange-500 text-white py-4 rounded-xl font-semibold hover:bg-orange-600 transition-colors text-center text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-primary-500 hover:bg-primary-600 text-white py-4 rounded-xl font-semibold transition-colors text-center text-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isSubmitting ? 'Оформляем заказ...' : 'Подтвердить заказ'}
+                {isSubmitting ? 'Պատվերը ձևակերպվում է...' : 'Հաստատել պատվերը'}
               </button>
               
               <p className="text-xs text-gray-500 mt-4 text-center">
-                Нажимая "Подтвердить заказ", вы соглашаетесь с условиями доставки
+                «Հաստատել պատվերը» սեղմելով՝ դուք համաձայն եք առաքման պայմաններին
               </p>
               {!session && (
                 <p className="text-xs text-blue-600 mt-2 text-center">
-                  💡 После заказа вы сможете создать аккаунт для быстрого оформления в будущем
+                  💡 Պատվերից հետո կկարողանաք հաշիվ ստեղծել արագ ձևակերպման համար
                 </p>
               )}
             </div>
@@ -481,20 +572,20 @@ export default function CheckoutPage() {
             <div className="lg:col-span-2">
               <div className="bg-white rounded-2xl shadow-lg p-8">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-semibold text-gray-900">Данные для доставки</h2>
+                  <h2 className="text-2xl font-semibold text-gray-900">Առաքման տվյալներ</h2>
                   {!session && (
                     <span className="text-sm bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
-                      Гостевой заказ
+                      Հյուրի պատվեր
                     </span>
                   )}
                 </div>
                 
                 <div className="space-y-6">
                   {/* Name */}
-                  <div>
+                  <div id="checkout-field-name-desktop">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       <User className="inline h-4 w-4 mr-1" />
-                      Имя *
+                      Անուն *
                     </label>
                     <input
                       type="text"
@@ -504,16 +595,16 @@ export default function CheckoutPage() {
                       className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors text-gray-900 ${
                         errors.name ? 'border-red-500' : 'border-gray-300'
                       }`}
-                      placeholder="Введите ваше имя"
+                      placeholder="Մուտքագրեք ձեր անունը"
                     />
                     {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
                   </div>
 
                   {/* Phone */}
-                  <div>
+                  <div id="checkout-field-phone-desktop">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       <Phone className="inline h-4 w-4 mr-1" />
-                      Телефон *
+                      Հեռախոս *
                     </label>
                     <input
                       type="tel"
@@ -529,10 +620,10 @@ export default function CheckoutPage() {
                   </div>
 
                   {/* Address */}
-                  <div>
+                  <div id="checkout-field-address-desktop">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       <MapPin className="inline h-4 w-4 mr-1" />
-                      Адрес доставки *
+                      Առաքման հասցե *
                     </label>
                     <textarea
                       name="address"
@@ -542,16 +633,63 @@ export default function CheckoutPage() {
                       className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors resize-none text-gray-900 ${
                         errors.address ? 'border-red-500' : 'border-gray-300'
                       }`}
-                      placeholder="Укажите полный адрес доставки"
+                      placeholder="Նշեք ամբողջական հասցեն"
                     />
                     {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address}</p>}
                   </div>
+
+                  {/* Delivery Type */}
+                  {deliveryTypes.length > 0 && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <Truck className="inline h-4 w-4 mr-1" />
+                        Առաքման տեսակ *
+                      </label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {deliveryTypes.map((dt) => (
+                          <label
+                            key={dt.id}
+                            className={`relative p-6 border-2 rounded-xl cursor-pointer transition-all duration-300 hover:shadow-lg ${
+                              formData.deliveryTypeId === dt.id
+                                ? 'border-primary-500 bg-primary-50 shadow-md'
+                                : 'border-gray-300 hover:border-primary-300'
+                            }`}
+                          >
+                            <input
+                              type="radio"
+                              name="deliveryTypeId"
+                              value={dt.id}
+                              checked={formData.deliveryTypeId === dt.id}
+                              onChange={handleInputChange}
+                              className="sr-only"
+                            />
+                            <div className="text-center">
+                              <div className="font-semibold text-gray-900 mb-1">{dt.name}</div>
+                              <div className="text-sm text-gray-600 mb-2">{dt.description}</div>
+                              <div className="text-sm font-medium text-gray-700">
+                                {dt.price === 0 ? 'Անվճար' : `${formatPrice(dt.price)} ֏`}
+                              </div>
+                            </div>
+                            {formData.deliveryTypeId === dt.id && (
+                              <div className="absolute top-4 right-4">
+                                <div className="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center">
+                                  <svg className="h-4 w-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                  </svg>
+                                </div>
+                              </div>
+                            )}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Delivery Time */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       <Clock className="inline h-4 w-4 mr-1" />
-                      Время доставки *
+                      Առաքման ժամ *
                     </label>
                     <select
                       name="deliveryTime"
@@ -559,7 +697,7 @@ export default function CheckoutPage() {
                       onChange={handleInputChange}
                       className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors text-gray-900"
                     >
-                      <option value="asap">Как можно скорее (20-30 мин)</option>
+                      <option value="asap">Որքան հնարավոր է շուտ (20-30 րոպե)</option>
                       <option value="11:00-12:00">11:00 - 12:00</option>
                       <option value="12:00-13:00">12:00 - 13:00</option>
                       <option value="13:00-14:00">13:00 - 14:00</option>
@@ -578,13 +716,13 @@ export default function CheckoutPage() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-4">
                       <CreditCard className="inline h-4 w-4 mr-1" />
-                      Способ оплаты *
+                      Վճարման եղանակ *
                     </label>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <label className={`relative p-6 border-2 rounded-xl cursor-pointer transition-all duration-300 hover:shadow-lg ${
                         formData.paymentMethod === 'cash' 
-                          ? 'border-orange-500 bg-orange-50 shadow-md' 
-                          : 'border-gray-300 hover:border-orange-300'
+                          ? 'border-primary-500 bg-primary-50 shadow-md' 
+                          : 'border-gray-300 hover:border-primary-300'
                       }`}>
                         <input
                           type="radio"
@@ -600,11 +738,11 @@ export default function CheckoutPage() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                             </svg>
                           </div>
-                          <h3 className="text-lg font-semibold text-gray-900 mb-2">Наличные</h3>
-                          <p className="text-sm text-gray-600">Оплата курьеру наличными при доставке</p>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2">Կանխիկ</h3>
+                          <p className="text-sm text-gray-600">Վճարում կուրիերին կանխիկ առաքման ժամանակ</p>
                           {formData.paymentMethod === 'cash' && (
                             <div className="absolute top-4 right-4">
-                              <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
+                              <div className="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center">
                                 <svg className="h-4 w-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                 </svg>
@@ -616,8 +754,8 @@ export default function CheckoutPage() {
                       
                       <label className={`relative p-6 border-2 rounded-xl cursor-pointer transition-all duration-300 hover:shadow-lg ${
                         formData.paymentMethod === 'card' 
-                          ? 'border-orange-500 bg-orange-50 shadow-md' 
-                          : 'border-gray-300 hover:border-orange-300'
+                          ? 'border-primary-500 bg-primary-50 shadow-md' 
+                          : 'border-gray-300 hover:border-primary-300'
                       }`}>
                         <input
                           type="radio"
@@ -631,11 +769,11 @@ export default function CheckoutPage() {
                           <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                             <CreditCard className="h-8 w-8 text-blue-600" />
                           </div>
-                          <h3 className="text-lg font-semibold text-gray-900 mb-2">Карта</h3>
-                          <p className="text-sm text-gray-600">Оплата картой через терминал курьера</p>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2">Քարտ</h3>
+                          <p className="text-sm text-gray-600">Վճարում քարտով կուրիերի տերմինալով</p>
                           {formData.paymentMethod === 'card' && (
                             <div className="absolute top-4 right-4">
-                              <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
+                              <div className="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center">
                                 <svg className="h-4 w-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                 </svg>
@@ -650,7 +788,7 @@ export default function CheckoutPage() {
                   {/* Notes */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Комментарий к заказу
+                      Մեկնաբանություն պատվերի համար
                     </label>
                     <textarea
                       name="notes"
@@ -658,7 +796,7 @@ export default function CheckoutPage() {
                       onChange={handleInputChange}
                       rows={3}
                       className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors resize-none text-gray-900"
-                      placeholder="Дополнительные пожелания к заказу..."
+                      placeholder="Լրացուցիչ ցանկություններ պատվերի համար..."
                     />
                   </div>
                 </div>
@@ -668,14 +806,14 @@ export default function CheckoutPage() {
             {/* Order Summary */}
             <div className="lg:col-span-1">
               <div className="bg-white rounded-2xl shadow-lg p-6 sticky top-8">
-                <h2 className="text-xl font-semibold text-gray-900 mb-6">Ваш заказ</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mb-6">Ձեր պատվերը</h2>
                 
                 <div className="space-y-4 mb-6">
                   {items.map((item) => (
                     <div key={item.product.id} className="flex justify-between items-center py-2">
                       <div className="flex-1">
                         <div className="font-medium text-gray-900">{item.product.name}</div>
-                        <div className="text-sm text-gray-600">{item.quantity} шт.</div>
+                        <div className="text-sm text-gray-600">{item.quantity} հատ</div>
                       </div>
                       <div className="font-semibold text-gray-900">
                         {formatPrice(item.product.price * item.quantity)} ֏
@@ -686,16 +824,16 @@ export default function CheckoutPage() {
                   <div className="border-t border-gray-300 pt-4">
                     <div className="space-y-2">
                       <div className="flex justify-between text-gray-600">
-                        <span>Товары</span>
+                        <span>Արտադրանք</span>
                         <span>{formatPrice(getTotalPrice())} ֏</span>
                       </div>
                       <div className="flex justify-between text-gray-600">
-                        <span>Доставка</span>
-                        <span>{getDeliveryPrice()} ֏</span>
+                        <span>Առաքում</span>
+                        <span>{getDeliveryPrice() === 0 ? 'Անվճար' : `${formatPrice(getDeliveryPrice())} ֏`}</span>
                       </div>
                       <div className="flex justify-between text-lg font-bold text-gray-900 border-t border-gray-300 pt-2">
-                        <span>Итого</span>
-                        <span>{formatPrice(getTotalPrice())} ֏</span>
+                        <span>Ընդամենը</span>
+                        <span>{formatPrice(getTotalPrice() + getDeliveryPrice())} ֏</span>
                       </div>
                     </div>
                   </div>
@@ -704,17 +842,17 @@ export default function CheckoutPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full bg-orange-500 text-white py-4 rounded-xl font-semibold hover:bg-orange-600 transition-colors text-center text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-primary-500 hover:bg-primary-600 text-white py-4 rounded-xl font-semibold transition-colors text-center text-lg disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isSubmitting ? 'Оформляем заказ...' : 'Подтвердить заказ'}
+                  {isSubmitting ? 'Պատվերը ձևակերպվում է...' : 'Հաստատել պատվերը'}
                 </button>
                 
                 <p className="text-xs text-gray-500 mt-4 text-center">
-                  Нажимая "Подтвердить заказ", вы соглашаетесь с условиями доставки
+                  «Հաստատել պատվերը» սեղմելով՝ դուք համաձայն եք առաքման պայմաններին
                 </p>
                 {!session && (
                   <p className="text-xs text-blue-600 mt-2 text-center">
-                    💡 После заказа вы сможете создать аккаунт для быстрого оформления в будущем
+                    💡 Պատվերից հետո կկարողանաք հաշիվ ստեղծել արագ ձևակերպման համար
                   </p>
                 )}
               </div>

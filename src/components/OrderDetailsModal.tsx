@@ -131,18 +131,19 @@ export default function OrderDetailsModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-[110] overflow-y-auto overflow-x-hidden pt-20 lg:pt-28 px-4 pb-8 bg-black/50 backdrop-blur-sm"
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"
       aria-labelledby="order-details-title"
     >
-      <div
-        ref={modalRef}
-        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between p-4 border-b border-neutral-200 flex-shrink-0">
+      <div className="flex min-h-[calc(100vh-5rem)] items-start justify-center">
+        <div
+          ref={modalRef}
+          className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[calc(100vh-6rem)] overflow-y-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
+        <div className="flex items-center justify-between p-4 border-b border-neutral-200 sticky top-0 bg-white z-10 rounded-t-2xl">
           <h2 id="order-details-title" className="text-lg font-bold text-neutral-900">
             Պատվերի մանրամասներ
           </h2>
@@ -157,7 +158,7 @@ export default function OrderDetailsModal({
           </button>
         </div>
 
-        <div className="overflow-y-auto flex-1 p-4">
+        <div className="p-4">
           {loading && (
             <div className="flex flex-col items-center justify-center py-12">
               <Loader2 className="h-10 w-10 text-[#002c45] animate-spin" />
@@ -288,6 +289,7 @@ export default function OrderDetailsModal({
               </section>
             </div>
           )}
+        </div>
         </div>
       </div>
     </div>

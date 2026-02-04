@@ -47,16 +47,17 @@ export default function ConfirmModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-50 overflow-y-auto p-4 bg-black/50 backdrop-blur-sm"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="confirm-modal-title"
     >
-      <div
-        className="relative bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="flex min-h-full items-center justify-center">
+        <div
+          className="relative bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[calc(100vh-2rem)] overflow-y-auto my-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
         <div className="flex items-center justify-between p-4 border-b border-neutral-200">
           <div className="flex items-center gap-3">
             <div
@@ -104,6 +105,7 @@ export default function ConfirmModal({
           >
             {isLoading ? '...' : confirmLabel}
           </button>
+        </div>
         </div>
       </div>
     </div>

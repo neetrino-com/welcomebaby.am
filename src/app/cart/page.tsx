@@ -6,6 +6,7 @@ import { ArrowLeft, ShoppingCart, Minus, Plus, Trash2, ShoppingBag } from 'lucid
 import { useCart } from '@/hooks/useCart'
 import Footer from '@/components/Footer'
 import { formatPrice } from '@/utils/priceUtils'
+import { isValidImagePath } from '@/utils/imageUtils'
 
 export default function CartPage() {
   const { items, updateQuantity, removeItem, getTotalPrice, clearCart } = useCart()
@@ -135,7 +136,7 @@ export default function CartPage() {
                   <div className="flex items-start space-x-4">
                     {/* Product Image */}
                     <div className="w-16 h-16 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0" style={{ backgroundColor: '#f3d98c' }}>
-                      {item.product.image && item.product.image !== 'no-image' ? (
+                      {item.product.image && item.product.image !== 'no-image' && isValidImagePath(item.product.image) ? (
                         <img 
                           src={item.product.image} 
                           alt={item.product.name}
@@ -151,7 +152,7 @@ export default function CartPage() {
                       ) : null}
                       <div 
                         className="w-full h-full flex items-center justify-center text-2xl"
-                        style={{ display: (item.product.image && item.product.image !== 'no-image') ? 'none' : 'flex' }}
+                        style={{ display: (item.product.image && item.product.image !== 'no-image' && isValidImagePath(item.product.image)) ? 'none' : 'flex' }}
                       >
                         🧸
                       </div>
@@ -162,9 +163,11 @@ export default function CartPage() {
                       <h3 className="text-base font-semibold text-gray-900 mb-1 leading-tight">
                         {item.product.name}
                       </h3>
-                      <p className="text-sm text-gray-600 mb-2">
-                        {item.product.categoryId || 'Առանց կատեգորիայի'}
-                      </p>
+                      {item.product.category?.name && (
+                        <p className="text-sm text-gray-600 mb-2">
+                          {item.product.category.name}
+                        </p>
+                      )}
                       <div className="text-lg font-bold mb-3" style={{ color: '#f3d98c' }}>
                         {formatPrice(item.product.price)} ֏
                       </div>
@@ -218,7 +221,7 @@ export default function CartPage() {
           <div className="lg:col-span-2">
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
               <div className="p-6 border-b border-gray-300">
-                <h2 className="text-xl font-semibold text-white">
+                <h2 className="text-xl font-semibold text-gray-900">
                   Արտադրանք զամբյուղում ({items.length})
                 </h2>
               </div>
@@ -229,7 +232,7 @@ export default function CartPage() {
                     <div className="flex items-center space-x-4">
                       {/* Product Image */}
                       <div className="w-20 h-20 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0" style={{ backgroundColor: '#f3d98c' }}>
-                        {item.product.image && item.product.image !== 'no-image' ? (
+                        {item.product.image && item.product.image !== 'no-image' && isValidImagePath(item.product.image) ? (
                           <img 
                             src={item.product.image} 
                             alt={item.product.name}
@@ -245,7 +248,7 @@ export default function CartPage() {
                         ) : null}
                         <div 
                           className="w-full h-full flex items-center justify-center text-3xl"
-                          style={{ display: (item.product.image && item.product.image !== 'no-image') ? 'none' : 'flex' }}
+                          style={{ display: (item.product.image && item.product.image !== 'no-image' && isValidImagePath(item.product.image)) ? 'none' : 'flex' }}
                         >
                           🧸
                         </div>
@@ -256,9 +259,11 @@ export default function CartPage() {
                         <h3 className="text-lg font-semibold text-gray-900 mb-1">
                           {item.product.name}
                         </h3>
-                        <p className="text-sm text-gray-600 mb-2">
-                          {item.product.categoryId || 'Առանց կատեգորիայի'}
-                        </p>
+                        {item.product.category?.name && (
+                          <p className="text-sm text-gray-600 mb-2">
+                            {item.product.category.name}
+                          </p>
+                        )}
                         <div className="text-xl font-bold" style={{ color: '#f3d98c' }}>
                           {item.product.salePrice ? (
                             <div className="flex flex-col">
@@ -309,7 +314,7 @@ export default function CartPage() {
                           onClick={() => removeItem(item.product.id)}
                           className="text-red-500 hover:text-red-600 text-sm mt-1"
                         >
-                          Удалить
+                          Հեռացնել
                         </button>
                       </div>
                     </div>
@@ -322,7 +327,7 @@ export default function CartPage() {
           {/* Order Summary */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-2xl shadow-lg p-6 sticky top-8">
-              <h2 className="text-xl font-semibold text-white mb-6">Ընդամենը</h2>
+              <h2 className="text-xl font-semibold text-gray-900 mb-6">Ընդամենը</h2>
               
               <div className="space-y-4 mb-6">
                 <div className="flex justify-between text-gray-600">
@@ -367,7 +372,7 @@ export default function CartPage() {
         {/* Mobile Order Summary */}
         <div className="lg:hidden">
           <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-            <h2 className="text-lg font-semibold text-white mb-4">Ընդամենը</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Ընդամենը</h2>
             
             <div className="space-y-3 mb-6">
               <div className="flex justify-between text-gray-600">

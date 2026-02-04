@@ -81,26 +81,70 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    const { name, phone, address, paymentMethod, notes, items, total, deliveryTime } = await request.json()
+    let body: Record<string, unknown>
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json(
+        { error: 'Invalid JSON body' },
+        { status: 400 }
+      )
+    }
+    const { name, phone, address, paymentMethod, notes, items, total, deliveryTime, deliveryTypeId } = body
+
+    // Валидация обязательных полей
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return NextResponse.json(
+        { error: 'Cart is empty' },
+        { status: 400 }
+      )
+    }
+    if (typeof total !== 'number' || total <= 0 || !Number.isFinite(total)) {
+      return NextResponse.json(
+        { error: 'Invalid total amount' },
+        { status: 400 }
+      )
+    }
+    if (!address || typeof address !== 'string' || !address.trim()) {
+      return NextResponse.json(
+        { error: 'Address is required' },
+        { status: 400 }
+      )
+    }
+    if (!phone || typeof phone !== 'string' || !phone.trim()) {
+      return NextResponse.json(
+        { error: 'Phone is required' },
+        { status: 400 }
+      )
+    }
+
+    const notesVal = notes != null && typeof notes === 'string' ? notes : null
+    let deliveryTypeIdVal: string | null = null
+    if (deliveryTypeId && typeof deliveryTypeId === 'string' && deliveryTypeId.trim()) {
+      const exists = await prisma.deliveryType.findUnique({
+        where: { id: deliveryTypeId, isActive: true },
+        select: { id: true }
+      })
+      if (exists) deliveryTypeIdVal = deliveryTypeId
+    }
 
     // Логируем только метаданные, без персональных данных (PII)
     logger.debug('Creating order:', { 
       hasSession: !!session, 
       userId: session?.user?.id, 
-      itemsCount: items?.length,
+      itemsCount: items.length,
       total,
       paymentMethod,
       deliveryTime,
-      // НЕ логируем: name, phone, address (PII)
-      items: items?.map((item: any) => ({
-        productId: item.productId,
-        quantity: item.quantity,
-        price: item.price
+      items: items.map((item: { productId?: string; quantity?: number; price?: number }) => ({
+        productId: item?.productId,
+        quantity: item?.quantity,
+        price: item?.price
       }))
     })
 
     // Проверяем, что все продукты существуют
-    if (items && items.length > 0) {
+    if (items.length > 0) {
       const productIds = items.map((item: any) => item.productId)
       const existingProducts = await prisma.product.findMany({
         where: { id: { in: productIds }, isAvailable: true, published: true },
@@ -125,20 +169,21 @@ export async function POST(request: NextRequest) {
     // Create order (supports both authenticated and guest users)
     const order = await prisma.order.create({
       data: {
-        userId: session?.user?.id || null, // null for guest orders
-        name: name || 'Guest Customer',
+        userId: session?.user?.id ?? null,
+        name: (name && typeof name === 'string' && name.trim()) ? name.trim() : 'Guest Customer',
         status: 'PENDING',
         total,
-        address,
-        phone,
-        notes,
-        paymentMethod,
-        deliveryTime,
+        address: String(address).trim(),
+        phone: String(phone).trim(),
+        notes: notesVal,
+        paymentMethod: paymentMethod && typeof paymentMethod === 'string' ? paymentMethod : 'cash',
+        deliveryTime: deliveryTime && typeof deliveryTime === 'string' ? deliveryTime : null,
+        deliveryTypeId: deliveryTypeIdVal,
         items: {
-          create: items.map((item: { productId: string; quantity: number; price: number }) => ({
-            productId: item.productId,
-            quantity: item.quantity,
-            price: item.price
+          create: items.map((item: { productId?: string; quantity?: number; price?: number }) => ({
+            productId: String(item?.productId ?? ''),
+            quantity: Math.max(1, Math.floor(Number(item?.quantity) || 1)),
+            price: Number(item?.price) || 0
           }))
         }
       },

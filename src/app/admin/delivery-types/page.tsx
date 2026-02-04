@@ -312,8 +312,9 @@ export default function DeliveryTypesPage() {
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto p-4">
+          <div className="flex min-h-full items-center justify-center">
+            <div className="bg-white rounded-xl max-w-md w-full max-h-[calc(100vh-2rem)] overflow-y-auto my-auto">
             <div className="p-6">
               <h2 className="text-xl font-semibold text-neutral-900 mb-4">
                 {editingType ? 'Խմբագրել առաքման տեսակ' : 'Նոր առաքման տեսակ'}
@@ -383,6 +384,7 @@ export default function DeliveryTypesPage() {
                   </button>
                 </div>
               </form>
+            </div>
             </div>
           </div>
         </div>
