@@ -6,6 +6,14 @@ import { logger } from '@/lib/logger'
 
 export async function POST(request: NextRequest) {
   try {
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      logger.error('Upload image: BLOB_READ_WRITE_TOKEN is not configured')
+      return NextResponse.json(
+        { error: 'Blob storage not configured. Add BLOB_READ_WRITE_TOKEN in Vercel Environment Variables.' },
+        { status: 503 }
+      )
+    }
+
     // Проверяем авторизацию
     const session = await getServerSession(authOptions)
     if (!session || session.user.role !== 'ADMIN') {
@@ -80,10 +88,12 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error'
     logger.error('Upload image error', error)
+    const isConfigError = message.includes('BLOB_READ_WRITE_TOKEN') || message.includes('не настроен')
     return NextResponse.json(
-      { error: 'Failed to upload image' },
-      { status: 500 }
+      { error: isConfigError ? 'Blob storage not configured. Add BLOB_READ_WRITE_TOKEN in Vercel.' : 'Failed to upload image' },
+      { status: isConfigError ? 503 : 500 }
     )
   }
 }
