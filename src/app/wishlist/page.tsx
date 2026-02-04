@@ -30,11 +30,11 @@ export default function WishlistPage() {
 
 function WishlistLoading() {
   return (
-    <div className="min-h-screen relative" style={{ backgroundColor: '#ffffff' }}>
+    <div className="min-h-screen relative bg-white pt-20 lg:pt-28 pb-20 lg:pb-8">
       <div className="container mx-auto px-4 py-8">
         <div className="text-center py-16">
-          <div className="w-16 h-16 border-4 border-t-transparent rounded-full animate-spin mx-auto mb-4" style={{ borderColor: '#f3d98c', borderTopColor: 'transparent' }}></div>
-          <p className="text-white text-lg">Բեռնվում է...</p>
+          <div className="w-16 h-16 border-4 border-t-transparent rounded-full animate-spin mx-auto mb-4 border-gray-300" style={{ borderTopColor: '#002c45' }}></div>
+          <p className="text-gray-700 text-lg">Բեռնվում է...</p>
         </div>
       </div>
     </div>
@@ -131,19 +131,19 @@ function WishlistContent() {
   }
 
   return (
-    <div className="min-h-screen relative" style={{ backgroundColor: '#ffffff' }}>
+    <div className="min-h-screen relative bg-white pt-20 lg:pt-28 pb-20 lg:pb-8">
       <div className="container mx-auto px-4 py-8">
         {/* Заголовок */}
         <div className="flex items-center gap-4 mb-8">
           <button
             onClick={() => router.back()}
-            className="p-2 hover:bg-gray-700 rounded-full transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
           >
-            <ArrowLeft className="w-5 h-5 text-white" />
+            <ArrowLeft className="w-5 h-5 text-gray-800" />
           </button>
           <div>
-            <h1 className="text-3xl font-bold text-white">Նախընտրած</h1>
-            <p className="text-gray-300 mt-1">
+            <h1 className="text-3xl font-bold text-gray-900">Նախընտրած</h1>
+            <p className="text-gray-600 mt-1">
               {wishlistItems.length} {wishlistItems.length === 1 ? 'արտադրանք' : 'արտադրանք'} նախընտրածում
             </p>
           </div>
@@ -152,11 +152,11 @@ function WishlistContent() {
         {/* Список товаров */}
         {wishlistItems.length === 0 ? (
           <div className="text-center py-16">
-            <Heart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-white mb-2">
+            <Heart className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
               Ձեր նախընտրած ցանկը դատարկ է
             </h2>
-            <p className="text-gray-300 mb-6">
+            <p className="text-gray-600 mb-6">
               Ավելացրեք արտադրանք նախընտրածում, որպեսզի չկորցնեք դրանք
             </p>
             <Link
@@ -170,9 +170,9 @@ function WishlistContent() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {wishlistItems.map((item) => (
-              <div key={item.id} className="bg-white/10 backdrop-blur-lg rounded-lg shadow-sm border border-white/20 overflow-hidden group hover:shadow-md transition-shadow duration-200">
+              <div key={item.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden group hover:shadow-md transition-shadow duration-200">
                 {/* Изображение */}
-                <div className="relative h-64 bg-white/10">
+                <div className="relative h-64 bg-gray-100">
                   <Link href={`/products/${item.product.id}`}>
                     {item.product.image && item.product.image !== 'no-image' ? (
                       <Image
@@ -185,7 +185,7 @@ function WishlistContent() {
                         quality={85}
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-white/20 text-6xl">
+                      <div className="w-full h-full flex items-center justify-center bg-gray-200 text-6xl">
                         🧸
                       </div>
                     )}
@@ -195,13 +195,13 @@ function WishlistContent() {
                   <button
                     onClick={() => removeFromWishlist(item.product.id)}
                     disabled={isRemoving === item.product.id}
-                    className="absolute top-2 right-2 w-8 h-8 bg-white/20 backdrop-blur-sm rounded-full shadow-sm flex items-center justify-center hover:bg-white/30 transition-colors disabled:opacity-50"
+                    className="absolute top-2 right-2 w-8 h-8 bg-white/90 rounded-full shadow-sm flex items-center justify-center hover:bg-white transition-colors disabled:opacity-50"
                     title="Удалить из избранного"
                   >
                     {isRemoving === item.product.id ? (
-                      <div className="w-4 h-4 animate-spin border-2 border-gray-300 border-t-gray-600 rounded-full" />
+                      <div className="w-4 h-4 animate-spin border-2 border-gray-300 border-t-red-500 rounded-full" />
                     ) : (
-                      <Trash2 className="w-4 h-4 text-white" />
+                      <Trash2 className="w-4 h-4 text-gray-600 hover:text-red-500" />
                     )}
                   </button>
 
@@ -213,7 +213,7 @@ function WishlistContent() {
                       </span>
                     )}
                     {item.product.status === 'HIT' && (
-                      <span className="text-white px-2 py-1 rounded text-xs font-bold"
+                      <span className="text-gray-900 px-2 py-1 rounded text-xs font-bold"
                         style={{ backgroundColor: '#f3d98c' }}
                       >
                         ՀԻԹ
@@ -231,13 +231,13 @@ function WishlistContent() {
                 <div className="p-4">
                   {/* Название */}
                   <Link href={`/products/${item.product.id}`}>
-                    <h3 className="font-semibold text-white line-clamp-2 hover:text-yellow-200 transition-colors mb-2">
+                    <h3 className="font-semibold text-gray-900 line-clamp-2 hover:text-[#002c45] transition-colors mb-2">
                       {item.product.name}
                     </h3>
                   </Link>
 
                   {/* Категория */}
-                  <p className="text-sm text-gray-300 mb-2">
+                  <p className="text-sm text-gray-600 mb-2">
                     {item.product.category.name}
                   </p>
 
@@ -253,7 +253,7 @@ function WishlistContent() {
                         </span>
                       </>
                     ) : (
-                      <span className="text-lg font-bold text-white">
+                      <span className="text-lg font-bold text-gray-900">
                         {item.product.price} ֏
                       </span>
                     )}
