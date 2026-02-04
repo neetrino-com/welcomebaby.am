@@ -1,13 +1,12 @@
 import { PrismaClient } from '@prisma/client'
+import { assertNeonDatabaseUrl } from '@/lib/db-config'
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
-// Используется только Neon: DATABASE_URL из .env (без локальных или альтернативных БД)
-if (!process.env.DATABASE_URL) {
-  throw new Error('DATABASE_URL is required. Set it in .env to your Neon database connection string.')
-}
+// Запрет локальной БД: только Neon (*.neon.tech)
+assertNeonDatabaseUrl()
 
 export const prisma = globalForPrisma.prisma ?? new PrismaClient()
 

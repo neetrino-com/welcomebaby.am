@@ -62,7 +62,7 @@ export default function EditCategoryPage({ params }: EditCategoryPageProps) {
           throw new Error('Category not found')
         }
 
-        const categoryData = await response.json()
+        const categoryData = await response.json().catch(() => ({}))
         setCategory(categoryData)
         
         setFormData({
@@ -112,7 +112,7 @@ export default function EditCategoryPage({ params }: EditCategoryPageProps) {
       if (response.ok) {
         router.push('/admin/categories')
       } else {
-        const errorData = await response.json()
+        const errorData = await response.json().catch(() => ({}))
         setError(errorData.error || 'Ошибка при сохранении категории')
       }
     } catch (error) {

@@ -22,7 +22,7 @@ export default function ProfileSettingsPage() {
         await doSignOut({ callbackUrl: '/account-deleted' })
         window.location.href = '/account-deleted'
       } else {
-        const data = await response.json()
+        const data = await response.json().catch(() => ({}))
         throw new Error(data.error || 'Failed to delete account')
       }
     } catch (error) {

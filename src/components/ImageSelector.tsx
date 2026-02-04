@@ -105,8 +105,8 @@ export default function ImageSelector({ value, onChange, className = '' }: Image
             onChange(imageUrl)
           }
         } else {
-          const error = await response.json()
-          alert(`Ошибка загрузки ${file.name}: ${error.message}`)
+          const error = await response.json().catch(() => ({}))
+          alert(`Ошибка загрузки ${file.name}: ${error.message || 'Unknown error'}`)
         }
       }
     } catch (error) {

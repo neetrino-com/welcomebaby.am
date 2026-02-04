@@ -94,7 +94,7 @@ export function useInstantSearch({
         throw new Error(`Search failed: ${response.status}`)
       }
 
-      const data = await response.json()
+      const data = await response.json().catch(() => ({ results: [] }))
       const searchResults = data.results || []
       
       // НЕ кэшируем результаты для актуальности данных при добавлении новых товаров

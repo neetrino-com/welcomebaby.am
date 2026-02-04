@@ -67,7 +67,7 @@ function WishlistContent() {
         const data = await response.json()
         setWishlistItems(data.data || [])
       } else {
-        const errorData = await response.json()
+        const errorData = await response.json().catch(() => ({}))
         console.error('Failed to fetch wishlist:', errorData.error)
       }
     } catch (error) {

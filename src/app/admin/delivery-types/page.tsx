@@ -94,7 +94,7 @@ export default function DeliveryTypesPage() {
         setEditingType(null)
         setFormData({ name: '', deliveryTime: '', description: '', price: 0, isActive: true })
       } else {
-        const err = await response.json()
+        const err = await response.json().catch(() => ({}))
         alert(err.error || 'Պահպանելիս սխալ')
       }
     } catch (error) {

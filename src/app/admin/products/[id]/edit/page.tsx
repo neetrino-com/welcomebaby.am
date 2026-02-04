@@ -175,7 +175,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
+        const errorData = await response.json().catch(() => ({}))
         console.error('API Error:', errorData)
         throw new Error(errorData.error || 'Failed to update product')
       }
@@ -202,7 +202,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
+        const errorData = await response.json().catch(() => ({}))
         throw new Error(errorData.error || 'Failed to delete product')
       }
 

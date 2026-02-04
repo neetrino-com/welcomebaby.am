@@ -100,7 +100,7 @@ export default function CategoriesPage() {
         setCategoryToDelete(null)
         await fetchCategories()
       } else {
-        const err = await response.json()
+        const err = await response.json().catch(() => ({}))
         alert(err.error || 'Ջնջելիս սխալ')
       }
     } catch (err) {

@@ -7,6 +7,7 @@
 import { PrismaClient } from '@prisma/client'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
+import { assertNeonDatabaseUrl } from '../src/lib/db-config'
 
 // Загружаем переменные окружения из .env файла вручную
 function loadEnv() {
@@ -38,6 +39,8 @@ function loadEnv() {
 
 // Загружаем переменные окружения
 loadEnv()
+// Запрет локальной БД: только Neon
+assertNeonDatabaseUrl()
 
 const prisma = new PrismaClient()
 

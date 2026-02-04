@@ -38,6 +38,7 @@ function ProductsPageContent() {
   const fetchProducts = async () => {
     try {
       const response = await fetch('/api/products')
+      if (!response.ok) throw new Error(`Products API error: ${response.status}`)
       const data = await response.json()
       setProducts(Array.isArray(data) ? data : [])
     } catch (error) {
@@ -51,6 +52,7 @@ function ProductsPageContent() {
   const fetchCategories = async () => {
     try {
       const response = await fetch('/api/categories')
+      if (!response.ok) throw new Error(`Categories API error: ${response.status}`)
       const data = await response.json()
       setCategories(Array.isArray(data) ? data : [])
     } catch (error) {

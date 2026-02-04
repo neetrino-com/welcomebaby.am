@@ -68,7 +68,7 @@ export default function RegisterPage() {
         }),
       })
 
-      const data = await response.json()
+      const data = await response.json().catch(() => ({ error: 'Գրանցման ժամանակ սխալ է տեղի ունեցել' }))
 
       if (response.ok) {
         // Автоматический вход после регистрации

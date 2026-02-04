@@ -49,7 +49,7 @@ export default function NewCategoryPage() {
       if (response.ok) {
         router.push('/admin/categories')
       } else {
-        const errorData = await response.json()
+        const errorData = await response.json().catch(() => ({}))
         setError(errorData.error || 'Ошибка при создании категории')
       }
     } catch (error) {
