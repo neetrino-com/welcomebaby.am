@@ -117,8 +117,9 @@ export default function MultiImageSelector({
           
           newImages.push(imageUrl)
         } else {
-          const error = await response.json().catch(() => ({}))
-          alert(`Ошибка загрузки ${file.name}: ${error.message || 'Unknown error'}`)
+          const data = await response.json().catch(() => ({}))
+          const msg = data.error || data.message || (response.status === 503 ? 'Պահեստը չի կարգավորվել: Ավելացրեք welcomebaby_READ_WRITE_TOKEN Vercel-ում։' : 'Unknown error')
+          alert(`Նկարի բեռնման սխալ ${file.name}: ${msg}`)
         }
       }
 

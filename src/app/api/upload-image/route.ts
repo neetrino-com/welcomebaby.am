@@ -6,10 +6,11 @@ import { logger } from '@/lib/logger'
 
 export async function POST(request: NextRequest) {
   try {
-    if (!process.env.BLOB_READ_WRITE_TOKEN) {
-      logger.error('Upload image: BLOB_READ_WRITE_TOKEN is not configured')
+    const blobToken = process.env.welcomebaby_READ_WRITE_TOKEN || process.env.WELCOMEBABY_READ_WRITE_TOKEN || process.env.BLOB_READ_WRITE_TOKEN
+    if (!blobToken) {
+      logger.error('Upload image: welcomebaby_READ_WRITE_TOKEN is not configured')
       return NextResponse.json(
-        { error: 'Blob storage not configured. Add BLOB_READ_WRITE_TOKEN in Vercel Environment Variables.' },
+        { error: 'Blob storage not configured. Add welcomebaby_READ_WRITE_TOKEN in Vercel Environment Variables.' },
         { status: 503 }
       )
     }

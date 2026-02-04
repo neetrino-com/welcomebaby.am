@@ -1,10 +1,14 @@
 /**
  * Утилита для работы с Vercel Blob Storage
- * Работает одинаково в локальной разработке и на production
- * Требует BLOB_READ_WRITE_TOKEN для работы
+ * Использует welcomebaby_READ_WRITE_TOKEN (или BLOB_READ_WRITE_TOKEN для совместимости)
  */
 
 import { put, del, list } from '@vercel/blob'
+
+const getBlobToken = () =>
+  process.env.welcomebaby_READ_WRITE_TOKEN ||
+  process.env.WELCOMEBABY_READ_WRITE_TOKEN ||
+  process.env.BLOB_READ_WRITE_TOKEN
 
 export interface BlobUploadResult {
   url: string
@@ -16,23 +20,22 @@ export interface BlobUploadResult {
 
 /**
  * Загружает файл в Vercel Blob Storage
- * Требует BLOB_READ_WRITE_TOKEN в переменных окружения
  */
 export async function uploadFile(
   file: File,
   fileName: string
 ): Promise<{ url: string; path: string }> {
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+  const token = getBlobToken()
+  if (!token) {
     throw new Error(
-      'BLOB_READ_WRITE_TOKEN не настроен. ' +
-      'Настройте Vercel Blob Storage и добавьте токен в .env файл. ' +
-      'Получить токен: Vercel Dashboard → Storage → Blob → Tokens'
+      'welcomebaby_READ_WRITE_TOKEN не настроен. ' +
+      'Добавьте токен в Vercel Environment Variables.'
     )
   }
 
   const blob = await put(fileName, file, {
     access: 'public',
-    token: process.env.BLOB_READ_WRITE_TOKEN,
+    token,
     contentType: file.type,
   })
 
@@ -47,27 +50,18 @@ export async function uploadFile(
  * Удаляет файл из Vercel Blob
  */
 export async function deleteFile(url: string): Promise<void> {
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
-    throw new Error('BLOB_READ_WRITE_TOKEN не настроен')
-  }
-
-  await del(url, {
-    token: process.env.BLOB_READ_WRITE_TOKEN,
-  })
+  const token = getBlobToken()
+  if (!token) throw new Error('welcomebaby_READ_WRITE_TOKEN не настроен')
+  await del(url, { token })
 }
 
 /**
  * Список файлов в Blob Store
  */
 export async function listFiles(prefix?: string): Promise<BlobUploadResult[]> {
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
-    throw new Error('BLOB_READ_WRITE_TOKEN не настроен')
-  }
-
-  const { blobs } = await list({
-    prefix,
-    token: process.env.BLOB_READ_WRITE_TOKEN,
-  })
+  const token = getBlobToken()
+  if (!token) throw new Error('welcomebaby_READ_WRITE_TOKEN не настроен')
+  const { blobs } = await list({ prefix, token })
 
   return blobs.map((blob) => ({
     url: blob.url,
