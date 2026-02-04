@@ -22,6 +22,7 @@
     "db:add-300-products": "tsx scripts/add-300-test-products.ts",
     "db:assign-category-images": "tsx scripts/assign-category-images.ts",
     "db:remove-banner-status": "tsx scripts/remove-banner-status.ts",
+    "db:publish-products": "tsx scripts/publish-all-products.ts",
     "parse": "tsx scripts/parse-buy-am.ts",
     "import": "tsx scripts/import-from-file.ts",
     "auto-import": "tsx scripts/auto-import.ts"
