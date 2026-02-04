@@ -34,7 +34,7 @@ export default function SidebarLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
-    <div className="min-h-screen flex" style={{ backgroundColor: '#f1f5f9' }}>
+    <div className="min-h-screen flex flex-col lg:flex-row" style={{ backgroundColor: '#f1f5f9' }}>
       {sidebarOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/50 lg:hidden"
@@ -45,14 +45,15 @@ export default function SidebarLayout({
 
       <aside
         className={`
-          fixed top-0 left-0 z-50 h-full w-64 flex flex-col
+          fixed top-0 left-0 bottom-0 z-50 w-64 flex flex-col
           transform transition-transform duration-200 ease-out
-          lg:translate-x-0 lg:static lg:z-auto
+          lg:translate-x-0 lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:flex-shrink-0 lg:self-start
+          lg:border-r lg:border-white/10 lg:shadow-lg
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
         style={{ backgroundColor: '#002c45' }}
       >
-        <div className="flex items-center justify-between h-16 px-4 border-b border-white/10">
+        <div className="flex items-center justify-between h-16 px-4 border-b border-white/10 flex-shrink-0">
           <span className="text-lg font-bold text-white">{sidebarTitle}</span>
           <button
             type="button"
@@ -64,17 +65,17 @@ export default function SidebarLayout({
           </button>
         </div>
 
-        {sidebarHeader && <div className="border-b border-white/10">{sidebarHeader}</div>}
+        {sidebarHeader && <div className="border-b border-white/10 flex-shrink-0">{sidebarHeader}</div>}
 
-        <nav className="flex-1 overflow-y-auto py-4 px-3">
+        <nav className="flex-1 overflow-y-auto py-4 px-3 min-h-0">
           <ul className="space-y-1">
             {navItems.map((item) => {
               const Icon = item.icon
               const isActive = getIsActive?.(item.href) ?? false
               const isAnchor = item.href.startsWith('#')
               const linkClass = `
-                flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
-                ${isActive ? 'text-[#002c45] bg-[#f3d98c]' : 'text-white/90 hover:bg-white/10 hover:text-white'}
+                flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-200
+                ${isActive ? 'text-[#002c45] bg-[#f3d98c] shadow-sm' : 'text-white/90 hover:bg-white/10 hover:text-white'}
               `
               return (
                 <li key={item.href}>
@@ -103,12 +104,12 @@ export default function SidebarLayout({
           </ul>
         </nav>
 
-        <div className="p-3 border-t border-white/10">{sidebarFooter}</div>
+        <div className="p-3 border-t border-white/10 flex-shrink-0">{sidebarFooter}</div>
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
         <header
-          className="sticky top-0 z-30 flex items-center gap-4 h-14 px-4 border-b border-gray-200 shadow-sm lg:px-8"
+          className="sticky top-0 z-30 flex items-center gap-4 h-14 px-4 border-b border-gray-200 shadow-sm lg:px-8 flex-shrink-0"
           style={{ backgroundColor: '#ffffff' }}
         >
           <button

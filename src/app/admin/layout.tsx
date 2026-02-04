@@ -37,7 +37,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       sidebarFooter={
         <Link
           href="/"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors duration-200"
         >
           <ChevronLeft className="h-5 w-5" />
           Դեպի կայք
