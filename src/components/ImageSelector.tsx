@@ -94,14 +94,14 @@ export default function ImageSelector({ value, onChange, className = '' }: Image
           // Используем полный URL от Blob (url) - это важно для работы с Vercel Blob Storage
           const imageUrl = result.url || result.path
           
-          // Добавляем новое изображение в список
+          // Добавляем новое изображение в список (галерея)
           setImages(prev => [...prev, {
             name: file.name,
             path: imageUrl
           }])
           
-          // Если это первое загруженное изображение, выбираем его
-          if (i === 0 && !value) {
+          // Первое загруженное изображение сразу становится основным
+          if (i === 0) {
             onChange(imageUrl)
           }
         } else {

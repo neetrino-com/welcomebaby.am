@@ -280,6 +280,9 @@ export default function NewProductPage() {
                     value={formData.images}
                     onChange={(images) => handleInputChange('images', images)}
                     maxImages={10}
+                    onImageUploaded={(url) => {
+                      if (!formData.image) handleInputChange('image', url)
+                    }}
                   />
                 </div>
 

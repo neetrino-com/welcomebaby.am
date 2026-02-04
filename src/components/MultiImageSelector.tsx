@@ -18,6 +18,7 @@ interface MultiImageSelectorProps {
   onChange: (images: string[]) => void
   maxImages?: number  // Максимальное количество изображений
   className?: string
+  onImageUploaded?: (url: string) => void  // Вызывается при загрузке — можно установить как основное изображение
 }
 
 interface ImageFile {
@@ -30,7 +31,8 @@ export default function MultiImageSelector({
   value = [], 
   onChange, 
   maxImages = 10,
-  className = '' 
+  className = '',
+  onImageUploaded
 }: MultiImageSelectorProps) {
   const [activeTab, setActiveTab] = useState<'gallery' | 'upload' | null>(null)
   const [images, setImages] = useState<ImageFile[]>([])
@@ -116,6 +118,7 @@ export default function MultiImageSelector({
           }])
           
           newImages.push(imageUrl)
+          if (onImageUploaded) onImageUploaded(imageUrl)
         } else {
           const data = await response.json().catch(() => ({}))
           const msg = data.error || data.message || (response.status === 503 ? 'Պահեստը չի կարգավորվել: Ավելացրեք welcomebaby_READ_WRITE_TOKEN Vercel-ում։' : 'Unknown error')
