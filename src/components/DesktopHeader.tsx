@@ -270,7 +270,7 @@ export default function DesktopHeader() {
                 <Link 
                   href="/profile" 
                   className={`
-                    flex items-center space-x-2 px-3 py-2 rounded-xl transition-all duration-300 group
+                    relative flex items-center space-x-2 px-3 py-2 rounded-xl transition-all duration-300 group mt-1
                     ${isActive('/profile')
                       ? 'text-white bg-white/20 shadow-md'
                       : 'text-white/90 hover:text-white hover:bg-white/10'

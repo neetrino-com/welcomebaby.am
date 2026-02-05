@@ -286,35 +286,6 @@ export default function NewProductPage() {
                   />
                 </div>
 
-                {/* Ингредиенты */}
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Ингредиенты
-                  </label>
-                  <Input
-                    value={formData.ingredients}
-                    onChange={(e) => handleInputChange('ingredients', e.target.value)}
-                    placeholder="Ингредиент 1, Ингредиент 2, Ингредиент 3"
-                  />
-                  <p className="text-sm text-gray-500 mt-1">
-                    Разделите ингредиенты запятыми
-                  </p>
-                </div>
-
-                {/* Доступность */}
-                <div className="md:col-span-2">
-                  <label className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      checked={formData.isAvailable}
-                      onChange={(e) => handleInputChange('isAvailable', e.target.checked)}
-                      className="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
-                    />
-                    <span className="text-sm font-medium text-gray-700">
-                      Товар доступен для заказа
-                    </span>
-                  </label>
-                </div>
               </div>
 
               {/* Кнопки */}

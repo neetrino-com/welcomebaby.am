@@ -28,12 +28,26 @@ export async function GET(request: NextRequest) {
     // Получаем параметры запроса
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
+    const dateFrom = searchParams.get('dateFrom')
+    const dateTo = searchParams.get('dateTo')
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '10')
     const skip = (page - 1) * limit
 
-    // Строим фильтр по статусу
-    const whereClause: { status?: OrderStatus } = status ? { status: status as OrderStatus } : {}
+    // Строим фильтр
+    const whereClause: { status?: OrderStatus; createdAt?: { gte?: Date; lte?: Date } } = {}
+    if (status) {
+      whereClause.status = status as OrderStatus
+    }
+    if (dateFrom || dateTo) {
+      whereClause.createdAt = {}
+      if (dateFrom) {
+        whereClause.createdAt.gte = new Date(dateFrom)
+      }
+      if (dateTo) {
+        whereClause.createdAt.lte = new Date(dateTo)
+      }
+    }
 
     // Получаем заказы с пагинацией
     const [orders, totalCount] = await Promise.all([

@@ -46,9 +46,9 @@ export default function ProfileLayout({
 
   return (
     <div className="min-h-screen bg-neutral-50 flex flex-col">
-      <div className="h-20 lg:h-28 flex-shrink-0" aria-hidden />
+      <div className="h-24 lg:h-32 flex-shrink-0" aria-hidden />
 
-      <div className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 lg:pb-10">
+      <div className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 lg:pb-10 pt-4">
         {/* Mobile: back link + horizontal nav */}
         <div className="lg:hidden mb-6">
           <Link

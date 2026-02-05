@@ -1,7 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { createPortal } from 'react-dom'
+import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Order, OrderItem, User } from '@/types'
@@ -11,24 +10,17 @@ import {
   Eye,
   RefreshCw,
   ChevronRight,
-  Calendar,
-  User as UserIcon,
-  Phone,
-  CreditCard,
-  Package,
   Clock,
-  X,
   CheckCircle,
-  AlertCircle,
-  Truck,
-  CheckSquare,
   ShoppingCart,
-  DollarSign
+  DollarSign,
+  Calendar
 } from 'lucide-react'
 import Pagination from '@/components/Pagination'
 import AdminTabs from '@/components/admin/Tabs'
 import BulkActionsBar from '@/components/admin/BulkActionsBar'
 import ConfirmModal from '@/components/admin/ConfirmModal'
+import AdminOrderDetailsModal from '@/components/admin/AdminOrderDetailsModal'
 
 interface OrderWithDetails extends Order {
   user: User
@@ -107,6 +99,8 @@ export default function AdminOrdersPage() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedOrder, setSelectedOrder] = useState<OrderWithDetails | null>(null)
   const [showModal, setShowModal] = useState(false)
@@ -148,6 +142,12 @@ export default function AdminOrdersPage() {
       if (statusFilter) {
         params.append('status', statusFilter)
       }
+      if (dateFrom) {
+        params.append('dateFrom', new Date(dateFrom).toISOString())
+      }
+      if (dateTo) {
+        params.append('dateTo', new Date(dateTo).toISOString())
+      }
 
       const response = await fetch(`/api/admin/orders?${params}`)
       
@@ -183,27 +183,14 @@ export default function AdminOrdersPage() {
     setShowModal(true)
   }
 
-  const closeModal = useCallback(() => {
+  const closeModal = () => {
     setShowModal(false)
     setSelectedOrder(null)
-  }, [])
-
-  // Portal: lock body scroll and ESC when order details modal is open
-  useEffect(() => {
-    if (!showModal) return
-    const prevOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') closeModal() }
-    document.addEventListener('keydown', handleEsc)
-    return () => {
-      document.body.style.overflow = prevOverflow
-      document.removeEventListener('keydown', handleEsc)
-    }
-  }, [showModal, closeModal])
+  }
 
   useEffect(() => {
     fetchOrders()
-  }, [currentPage, statusFilter])
+  }, [currentPage, statusFilter, dateFrom, dateTo])
 
   const handleBulkDelete = async () => {
     const ids = Array.from(selectedIds)
@@ -276,19 +263,6 @@ export default function AdminOrdersPage() {
       }
     } catch (error) {
       console.error('Error updating order status:', error)
-    }
-  }
-
-  // Получаем иконку для статуса
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'PENDING': return <Clock className="h-4 w-4" />
-      case 'CONFIRMED': return <CheckCircle className="h-4 w-4" />
-      case 'PREPARING': return <Package className="h-4 w-4" />
-      case 'READY': return <CheckSquare className="h-4 w-4" />
-      case 'DELIVERED': return <Truck className="h-4 w-4" />
-      case 'CANCELLED': return <X className="h-4 w-4" />
-      default: return <AlertCircle className="h-4 w-4" />
     }
   }
 
@@ -379,17 +353,53 @@ export default function AdminOrdersPage() {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-4 mb-6">
-        <label className="block text-sm font-medium text-neutral-700 mb-2">
-          <Search className="inline h-4 w-4 mr-1" />
-          Փնտրել
-        </label>
-        <input
-          type="text"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full max-w-md px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-          placeholder="Անուն, email, հեռախոս կամ ID..."
-        />
+        <div className="flex flex-col gap-4">
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-2">
+              <Search className="inline h-4 w-4 mr-1" />
+              Փնտրել
+            </label>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full max-w-md px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+              placeholder="Անուն, email, հեռախոս կամ ID..."
+            />
+          </div>
+          <div className="flex flex-wrap items-end gap-4">
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">
+                <Calendar className="inline h-4 w-4 mr-1" />
+                Սկզբից
+              </label>
+              <input
+                type="datetime-local"
+                value={dateFrom}
+                onChange={(e) => { setDateFrom(e.target.value); setCurrentPage(1) }}
+                className="px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-neutral-900"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">Մինչև</label>
+              <input
+                type="datetime-local"
+                value={dateTo}
+                onChange={(e) => { setDateTo(e.target.value); setCurrentPage(1) }}
+                className="px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-neutral-900"
+              />
+            </div>
+            {(dateFrom || dateTo) && (
+              <button
+                type="button"
+                onClick={() => { setDateFrom(''); setDateTo(''); setCurrentPage(1) }}
+                className="px-4 py-2 text-sm font-medium text-neutral-600 hover:text-neutral-900 border border-neutral-300 rounded-lg hover:bg-neutral-50"
+              >
+                Մաքրել ժամանակահատվածը
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
       <AdminTabs
@@ -424,71 +434,87 @@ export default function AdminOrdersPage() {
           />
         )}
 
-        {filteredOrders.length > 0 && (
-          <div className="flex items-center gap-2 px-4 py-2 bg-neutral-50 border-b border-neutral-200">
-            <input
-              type="checkbox"
-              checked={allSelected}
-              onChange={toggleSelectAll}
-              className="rounded border-neutral-300 text-primary-500"
-              aria-label="Ընտրել բոլորը"
-            />
-            <span className="text-sm text-neutral-600">Ընտրել բոլորը</span>
-          </div>
-        )}
-          
-          <div className="divide-y divide-neutral-200">
-            {filteredOrders.length === 0 ? (
-              <div className="text-center py-12 text-neutral-500">
-                <ShoppingCart className="h-12 w-12 mx-auto mb-4 text-neutral-300" />
-                <p className="text-lg">Պատվերներ չեն գտնվել</p>
-                <p className="text-sm mt-2">
-                  {searchTerm || statusFilter ? 'Փոխեք ֆիլտրերը' : 'Դեռ պատվերներ չկան'}
-                </p>
-              </div>
-            ) : (
-              filteredOrders.map((order) => (
-                <div key={order.id} className="p-4 flex items-center gap-4 hover:bg-neutral-50 transition-colors">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[900px]">
+            <thead className="bg-neutral-50 border-b border-neutral-200">
+              <tr>
+                <th className="px-3 py-2 text-left w-10">
                   <input
                     type="checkbox"
-                    checked={selectedIds.has(order.id)}
-                    onChange={() => toggleSelectOne(order.id)}
-                    className="rounded border-neutral-300 text-primary-500"
-                    aria-label={`Ընտրել պատվեր ${order.id.slice(-8)}`}
+                    checked={allSelected}
+                    onChange={toggleSelectAll}
+                    className="rounded border-neutral-300 text-primary-500 focus:ring-primary-500"
+                    aria-label="Ընտրել բոլորը"
                   />
-                  <div className="w-10 h-10 bg-orange-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <ShoppingCart className="h-5 w-5 text-orange-500" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-neutral-900">Պատվեր #{order.id.slice(-8)}</h3>
-                    <div className="flex items-center gap-4 text-sm mt-1">
-                      <span className="font-semibold text-primary-500">{order.totalAmount.toLocaleString()} ֏</span>
-                      <span className="text-neutral-600">{order.items.length} ապրանք</span>
-                      <span className="text-neutral-500">
-                        {new Date(order.createdAt).toLocaleDateString('hy-AM')} {new Date(order.createdAt).toLocaleTimeString('hy-AM', { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                      <span className="text-neutral-700">{order.user?.name || order.name || 'Հյուր'}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button onClick={() => openOrderDetails(order)} variant="outline" size="sm" className="gap-1">
-                      <Eye className="h-4 w-4" />
-                      Մանրամասներ
-                    </Button>
-                    <select
-                      value={order.status}
-                      onChange={(e) => updateOrderStatus(order.id, e.target.value)}
-                      className={`px-3 py-1.5 rounded-lg border-0 text-sm font-medium cursor-pointer ${statusColors[order.status]}`}
-                    >
-                      {ORDER_TABS.filter((t) => t.value).map((t) => (
-                        <option key={t.value} value={t.value}>{t.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
+                </th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Պատվերի №</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase min-w-[140px]">Անուն</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Հեռախոս</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase min-w-[120px]">Հասցե</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Գումար</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Ապրանքներ</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Ամսաթիվ</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Կարգավիճակ</th>
+                <th className="px-3 py-2 text-center text-xs font-semibold text-neutral-600 uppercase">Գործողություններ</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-neutral-200">
+              {filteredOrders.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="px-4 py-12 text-center text-neutral-500">
+                    <ShoppingCart className="h-12 w-12 mx-auto mb-4 text-neutral-300" />
+                    <p className="text-lg">Պատվերներ չեն գտնվել</p>
+                    <p className="text-sm mt-2">
+                      {searchTerm || statusFilter ? 'Փոխեք ֆիլտրերը' : 'Դեռ պատվերներ չկան'}
+                    </p>
+                  </td>
+                </tr>
+              ) : (
+                filteredOrders.map((order) => (
+                  <tr key={order.id} className="hover:bg-neutral-50 transition-colors">
+                    <td className="px-3 py-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(order.id)}
+                        onChange={() => toggleSelectOne(order.id)}
+                        className="rounded border-neutral-300 text-primary-500 focus:ring-primary-500"
+                        aria-label={`Ընտրել պատվեր ${order.id.slice(-8)}`}
+                      />
+                    </td>
+                    <td className="px-3 py-2 font-medium text-neutral-900">#{order.id.slice(-8)}</td>
+                    <td className="px-3 py-2 text-sm text-neutral-900">{order.user?.name || order.name || 'Հյուր'}</td>
+                    <td className="px-3 py-2 text-sm text-neutral-700">{order.user?.phone || order.phone || '—'}</td>
+                    <td className="px-3 py-2 text-sm text-neutral-600 max-w-[180px] truncate" title={order.address}>{order.address || '—'}</td>
+                    <td className="px-3 py-2 text-sm font-semibold text-primary-600">{order.totalAmount.toLocaleString()} ֏</td>
+                    <td className="px-3 py-2 text-sm text-neutral-600">{order.items.length}</td>
+                    <td className="px-3 py-2 text-sm text-neutral-600">
+                      {new Date(order.createdAt).toLocaleDateString('hy-AM', { day: '2-digit', month: '2-digit', year: 'numeric' })} {new Date(order.createdAt).toLocaleTimeString('hy-AM', { hour: '2-digit', minute: '2-digit' })}
+                    </td>
+                    <td className="px-3 py-2">
+                      <select
+                        value={order.status}
+                        onChange={(e) => updateOrderStatus(order.id, e.target.value)}
+                        className={`px-2 py-1 rounded-lg border-0 text-xs font-medium cursor-pointer ${statusColors[order.status] || 'bg-neutral-100 text-neutral-700'}`}
+                      >
+                        {ORDER_TABS.filter((t) => t.value).map((t) => (
+                          <option key={t.value} value={t.value}>{t.label}</option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-3 py-2">
+                      <div className="flex items-center justify-center gap-1">
+                        <Button onClick={() => openOrderDetails(order)} variant="outline" size="sm" className="gap-1">
+                          <Eye className="h-4 w-4" />
+                          Մանրամասներ
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
 
         {pagination.pages > 1 && (
           <div className="p-4 border-t border-neutral-200">
@@ -503,148 +529,13 @@ export default function AdminOrdersPage() {
           </div>
         )}
 
-        {showModal && selectedOrder && typeof document !== 'undefined' && createPortal(
-          <div
-            className="fixed inset-0 z-[100] overflow-y-auto p-4 bg-black/50 backdrop-blur-sm"
-            onClick={closeModal}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="order-details-title"
-          >
-            <div className="flex min-h-full items-center justify-center">
-              <div
-                className="relative bg-white rounded-2xl shadow-2xl border border-neutral-200 w-full max-w-4xl max-h-[calc(100vh-2rem)] flex flex-col my-auto"
-                onClick={(e) => e.stopPropagation()}
-              >
-              <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-neutral-200 rounded-t-2xl bg-white">
-                <h2 id="order-details-title" className="text-xl font-semibold text-neutral-900">
-                  Պատվեր #{selectedOrder.id.slice(-8)}
-                </h2>
-                <Button onClick={closeModal} variant="outline" size="sm" className="gap-2" aria-label="Փակել">
-                  <X className="h-4 w-4" />
-                  Փակել
-                </Button>
-              </div>
-              <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className={`${statusBackgroundColors[selectedOrder.status]} ${statusBorderColors[selectedOrder.status]} border rounded-2xl p-4`}>
-                    <div className="flex items-center gap-2 mb-3">
-                      {getStatusIcon(selectedOrder.status)}
-                      <span className="font-medium text-neutral-900">Կարգավիճակ</span>
-                    </div>
-                    <select
-                      value={selectedOrder.status}
-                      onChange={(e) => updateOrderStatus(selectedOrder.id, e.target.value)}
-                      className={`w-full px-3 py-2 bg-white border-2 ${statusBorderColors[selectedOrder.status]} rounded-xl focus:ring-2 focus:ring-primary-500 text-neutral-900 font-medium`}
-                    >
-                      {ORDER_TABS.filter((t) => t.value).map((t) => (
-                        <option key={t.value} value={t.value}>{t.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="bg-blue-50 rounded-2xl p-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Calendar className="h-4 w-4 text-blue-500" />
-                      <span className="font-medium text-neutral-900">Պատվերի ժամանակ</span>
-                    </div>
-                    <div className="text-sm font-medium text-neutral-900">
-                      {new Date(selectedOrder.createdAt).toLocaleString('hy-AM')}
-                    </div>
-                  </div>
-                  <div className="bg-green-50 rounded-2xl p-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <CreditCard className="h-4 w-4 text-green-500" />
-                      <span className="font-medium text-neutral-900">Գումար</span>
-                    </div>
-                    <div className="text-lg font-semibold text-orange-600">
-                      {selectedOrder.totalAmount.toLocaleString()} ֏
-                    </div>
-                    <div className="text-sm font-medium text-neutral-700">{selectedOrder.paymentMethod}</div>
-                  </div>
-                </div>
-                <div className="bg-neutral-50 border border-neutral-200 rounded-2xl p-6">
-                  <h3 className="font-semibold text-neutral-900 mb-4 flex items-center gap-2">
-                    <UserIcon className="h-5 w-5 text-primary-500" />
-                    Հաճախորդ և առաքում
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div>
-                      <p className="text-sm text-neutral-600 mb-1">Անուն</p>
-                      <p className="font-medium text-neutral-900">{selectedOrder.user?.name ?? selectedOrder.name}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-neutral-600 mb-1">Email</p>
-                      <p className="font-medium text-neutral-900">{selectedOrder.user?.email ?? '—'}</p>
-                    </div>
-                    {(selectedOrder.user?.phone || selectedOrder.phone) && (
-                      <div>
-                        <p className="text-sm text-neutral-600 mb-1">Հեռախոս</p>
-                        <p className="font-medium text-neutral-900 flex items-center gap-1">
-                          <Phone className="h-4 w-4" />
-                          {selectedOrder.user?.phone || selectedOrder.phone}
-                        </p>
-                      </div>
-                    )}
-                    <div>
-                      <p className="text-sm text-neutral-600 mb-1">Հասցե</p>
-                      <p className="font-medium text-neutral-900">{selectedOrder.address || '—'}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-neutral-600 mb-1">Առաքման ժամանակ</p>
-                      <p className="font-medium text-neutral-900">{selectedOrder.deliveryTime ?? '—'}</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-neutral-50 border border-neutral-200 rounded-2xl p-6">
-                  <h3 className="font-semibold text-neutral-900 mb-4 flex items-center gap-2">
-                    <Package className="h-5 w-5 text-primary-500" />
-                    Ապրանքներ
-                  </h3>
-                  <div className="space-y-3">
-                    {selectedOrder.items.map((item, index) => (
-                      <div key={index} className="flex items-center justify-between p-4 bg-white rounded-xl border border-neutral-200">
-                        <div className="flex items-center gap-3">
-                          {item.product.image && item.product.image !== 'no-image' ? (
-                            <img
-                              src={item.product.image}
-                              alt={item.product.name}
-                              className="w-12 h-12 rounded-lg object-cover"
-                            />
-                          ) : (
-                            <div className="w-12 h-12 rounded-lg bg-orange-100 flex items-center justify-center">
-                              <span className="text-lg">🧸</span>
-                            </div>
-                          )}
-                          <div>
-                            <p className="font-medium text-sm text-neutral-900">{item.product.name}</p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className="text-xs text-neutral-600">
-                                {item.product.price.toLocaleString()} ֏
-                              </span>
-                              <span className="text-neutral-400">×</span>
-                              <span className="bg-orange-100 text-orange-800 px-2 py-0.5 rounded text-xs font-medium">
-                                {item.quantity} հատ
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold text-sm text-neutral-900">
-                            {(item.product.price * item.quantity).toLocaleString()} ֏
-                          </p>
-                          <p className="text-xs text-neutral-500">
-                            {item.quantity} × {item.product.price.toLocaleString()} ֏
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              </div>
-            </div>
-          </div>,
-          document.body
+        {showModal && selectedOrder && (
+          <AdminOrderDetailsModal
+            isOpen={showModal}
+            onClose={closeModal}
+            order={selectedOrder}
+            onStatusUpdate={updateOrderStatus}
+          />
         )}
 
         <ConfirmModal

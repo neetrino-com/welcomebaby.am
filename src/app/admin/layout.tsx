@@ -8,7 +8,6 @@ import {
   Tag,
   ShoppingCart,
   Truck,
-  Settings,
   ChevronLeft,
 } from 'lucide-react'
 import SidebarLayout, { type SidebarNavItem } from '@/components/SidebarLayout'
@@ -19,7 +18,6 @@ const adminNavItems: SidebarNavItem[] = [
   { href: '/admin/categories', label: 'Կատեգորիաներ', icon: Tag },
   { href: '/admin/orders', label: 'Պատվերներ', icon: ShoppingCart },
   { href: '/admin/delivery-types', label: 'Առաքում', icon: Truck },
-  { href: '/admin/settings', label: 'Կարգավորումներ', icon: Settings },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

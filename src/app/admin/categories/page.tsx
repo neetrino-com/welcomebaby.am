@@ -24,14 +24,6 @@ interface Category {
   _count: { products: number }
 }
 
-function formatDate(s: string) {
-  try {
-    return new Date(s).toLocaleDateString('hy-AM', { day: '2-digit', month: '2-digit', year: 'numeric' })
-  } catch {
-    return '—'
-  }
-}
-
 export default function CategoriesPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
@@ -266,11 +258,7 @@ export default function CategoriesPage() {
                   />
                 </th>
                 <th className="px-4 py-2 text-left text-xs font-semibold text-neutral-600 uppercase min-w-[160px]">Անուն</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Slug</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Ծնող</th>
                 <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Ապրանքներ</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Ստեղծվել է</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Թարմացվել է</th>
                 <th className="px-3 py-2 text-center text-xs font-semibold text-neutral-600 uppercase">Գործողություններ</th>
               </tr>
             </thead>
@@ -311,11 +299,7 @@ export default function CategoriesPage() {
                       </div>
                     </div>
                   </td>
-                  <td className="px-3 py-2 text-sm text-neutral-500">—</td>
-                  <td className="px-3 py-2 text-sm text-neutral-500">—</td>
                   <td className="px-3 py-2 text-sm font-medium text-neutral-900">{category._count?.products ?? 0}</td>
-                  <td className="px-3 py-2 text-sm text-neutral-600">{formatDate(category.createdAt)}</td>
-                  <td className="px-3 py-2 text-sm text-neutral-600">{formatDate(category.updatedAt)}</td>
                   <td className="px-3 py-2">
                     <div className="flex items-center justify-center gap-1">
                       <Link

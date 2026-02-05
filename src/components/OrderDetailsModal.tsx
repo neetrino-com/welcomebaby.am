@@ -4,6 +4,7 @@ import { useEffect, useRef, useCallback, useState } from 'react'
 import { X, Package, Clock, CheckCircle, XCircle, MapPin, Phone, User, CreditCard, Truck, Loader2, AlertCircle } from 'lucide-react'
 import { formatPrice } from '@/utils/priceUtils'
 import type { OrderDetails } from '@/types'
+import BaseModal from '@/components/ui/BaseModal'
 
 const STATUS_CONFIG: Record<
   string,
@@ -96,29 +97,10 @@ export default function OrderDetailsModal({
   }, [isOpen, orderId, fetchOrder])
 
   useEffect(() => {
-    if (!isOpen) return
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', handleEsc)
-    return () => document.removeEventListener('keydown', handleEsc)
-  }, [isOpen, onClose])
-
-  useEffect(() => {
     if (isOpen) {
       closeButtonRef.current?.focus()
-      document.body.style.overflow = 'hidden'
-    }
-    return () => {
-      document.body.style.overflow = ''
     }
   }, [isOpen])
-
-  const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) onClose()
-  }
-
-  if (!isOpen) return null
 
   const statusCfg = order
     ? STATUS_CONFIG[order.status] ?? {
@@ -130,19 +112,15 @@ export default function OrderDetailsModal({
   const StatusIcon = statusCfg?.icon ?? Clock
 
   return (
-    <div
-      className="fixed inset-0 z-[110] overflow-y-auto overflow-x-hidden pt-20 lg:pt-28 px-4 pb-8 bg-black/50 backdrop-blur-sm"
-      onClick={handleBackdropClick}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="order-details-title"
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      closeOnOverlayClick={true}
+      variant="top"
+      ariaLabelledBy="order-details-title"
+      contentClassName="max-w-lg"
     >
-      <div className="flex min-h-[calc(100vh-5rem)] items-start justify-center">
-        <div
-          ref={modalRef}
-          className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[calc(100vh-6rem)] overflow-y-auto"
-          onClick={(e) => e.stopPropagation()}
-        >
+      <div ref={modalRef}>
         <div className="flex items-center justify-between p-4 border-b border-neutral-200 sticky top-0 bg-white z-10 rounded-t-2xl">
           <h2 id="order-details-title" className="text-lg font-bold text-neutral-900">
             Պատվերի մանրամասներ
@@ -290,8 +268,7 @@ export default function OrderDetailsModal({
             </div>
           )}
         </div>
-        </div>
       </div>
-    </div>
+    </BaseModal>
   )
 }

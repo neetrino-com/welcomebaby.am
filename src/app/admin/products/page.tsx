@@ -312,7 +312,7 @@ export default function AdminProducts() {
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-1">
               <Filter className="inline h-4 w-4 mr-1" />
-              Կարգավիճակ
+              Լեյբլ
             </label>
             <select
               value={selectedStatus}
@@ -326,7 +326,7 @@ export default function AdminProducts() {
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-1">
               <Filter className="inline h-4 w-4 mr-1" />
-              Տեսանելիություն
+              Կարգավիճակ
             </label>
             <select
               value={visibility}
@@ -409,8 +409,8 @@ export default function AdminProducts() {
                     {sortBy === 'price_desc' && <span className="text-primary-500">↓</span>}
                   </button>
                 </th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Լեյբլ</th>
                 <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Կարգավիճակ</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Տեսանելիություն</th>
                 <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Առկայություն</th>
                 <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Մնացորդ</th>
                 <th className="px-3 py-2 text-center text-xs font-semibold text-neutral-600 uppercase">Գործողություններ</th>
@@ -484,7 +484,7 @@ export default function AdminProducts() {
                     </td>
                     <td className="px-3 py-2">
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${product.isAvailable ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                        {product.isAvailable ? 'Առկա' : 'Չի վաճառվում'}
+                        {product.isAvailable ? 'Առկա' : 'Սպառված'}
                       </span>
                     </td>
                     <td className="px-3 py-2 text-sm font-medium">{(product.stock || 0)}</td>

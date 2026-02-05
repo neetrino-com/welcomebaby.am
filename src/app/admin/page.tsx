@@ -10,7 +10,6 @@ import {
   Users,
   DollarSign,
   CheckCircle,
-  Settings,
   Tag,
   Truck,
 } from 'lucide-react'
@@ -115,13 +114,6 @@ export default function AdminDashboard() {
       href: '/admin/delivery-types',
       icon: Truck,
       stats: `${stats.totalDeliveryTypes} տեսակ`,
-    },
-    {
-      title: 'Կարգավորումներ',
-      description: 'Համակարգի կոնֆիգուրացիա',
-      href: '/admin/settings',
-      icon: Settings,
-      stats: 'Կարգավորումներ',
     },
   ]
 

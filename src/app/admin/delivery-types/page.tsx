@@ -16,6 +16,7 @@ import {
 import Pagination from '@/components/Pagination'
 import BulkActionsBar from '@/components/admin/BulkActionsBar'
 import ConfirmModal from '@/components/admin/ConfirmModal'
+import BaseModal from '@/components/ui/BaseModal'
 
 const PAGE_SIZE = 10
 
@@ -311,84 +312,82 @@ export default function DeliveryTypesPage() {
         )}
       </div>
 
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto p-4">
-          <div className="flex min-h-full items-center justify-center">
-            <div className="bg-white rounded-xl max-w-md w-full max-h-[calc(100vh-2rem)] overflow-y-auto my-auto">
-            <div className="p-6">
-              <h2 className="text-xl font-semibold text-neutral-900 mb-4">
-                {editingType ? 'Խմբագրել առաքման տեսակ' : 'Նոր առաքման տեսակ'}
-              </h2>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">Անուն *</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                    placeholder="Օր. Կուրիերային առաքում"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">Առաքման ժամանակ *</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.deliveryTime}
-                    onChange={(e) => setFormData({ ...formData, deliveryTime: e.target.value })}
-                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                    placeholder="Օր. 1-2 օր"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">Նկարագրություն *</label>
-                  <textarea
-                    required
-                    rows={3}
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                    placeholder="Նկարագրություն"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">Գին (֏) *</label>
-                  <input
-                    type="number"
-                    required
-                    min="0"
-                    step="0.01"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                  />
-                </div>
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="isActive"
-                    checked={formData.isActive}
-                    onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                    className="rounded border-neutral-300 text-primary-500"
-                  />
-                  <label htmlFor="isActive" className="ml-2 text-sm text-neutral-700">Ակտիվ</label>
-                </div>
-                <div className="flex gap-3 pt-4">
-                  <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-4 py-2 border border-neutral-300 rounded-lg text-neutral-700 hover:bg-neutral-50">
-                    Չեղարկել
-                  </button>
-                  <button type="submit" className="flex-1 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600">
-                    {editingType ? 'Պահպանել' : 'Ստեղծել'}
-                  </button>
-                </div>
-              </form>
+      <BaseModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        ariaLabelledBy="delivery-type-form-title"
+      >
+        <div className="p-6">
+          <h2 id="delivery-type-form-title" className="text-xl font-semibold text-neutral-900 mb-4">
+            {editingType ? 'Խմբագրել առաքման տեսակ' : 'Նոր առաքման տեսակ'}
+          </h2>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">Անուն *</label>
+              <input
+                type="text"
+                required
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                placeholder="Օր. Կուրիերային առաքում"
+              />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">Առաքման ժամանակ *</label>
+              <input
+                type="text"
+                required
+                value={formData.deliveryTime}
+                onChange={(e) => setFormData({ ...formData, deliveryTime: e.target.value })}
+                className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                placeholder="Օր. 1-2 օր"
+              />
             </div>
-          </div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">Նկարագրություն *</label>
+              <textarea
+                required
+                rows={3}
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                placeholder="Նկարագրություն"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">Գին (֏) *</label>
+              <input
+                type="number"
+                required
+                min="0"
+                step="0.01"
+                value={formData.price}
+                onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="isActive"
+                checked={formData.isActive}
+                onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                className="rounded border-neutral-300 text-primary-500"
+              />
+              <label htmlFor="isActive" className="ml-2 text-sm text-neutral-700">Ակտիվ</label>
+            </div>
+            <div className="flex gap-3 pt-4">
+              <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-4 py-2 border border-neutral-300 rounded-lg text-neutral-700 hover:bg-neutral-50">
+                Չեղարկել
+              </button>
+              <button type="submit" className="flex-1 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600">
+                {editingType ? 'Պահպանել' : 'Ստեղծել'}
+              </button>
+            </div>
+          </form>
         </div>
-      )}
+      </BaseModal>
 
       <ConfirmModal
         isOpen={bulkConfirmOpen}

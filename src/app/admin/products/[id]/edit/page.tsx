@@ -13,10 +13,10 @@ import ImageSelector from '@/components/ImageSelector'
 import MultiImageSelector from '@/components/MultiImageSelector'
 
 const statuses = [
-  { value: 'HIT', label: 'Хит продаж' },
-  { value: 'NEW', label: 'Новинка' },
-  { value: 'CLASSIC', label: 'Классика' },
-  { value: 'BANNER', label: 'Баннер' }
+  { value: 'HIT', label: 'Վաճառքի հիթ' },
+  { value: 'NEW', label: 'Նորություն' },
+  { value: 'CLASSIC', label: 'Կլասիկ' },
+  { value: 'BANNER', label: 'Բաններ' }
 ]
 
 interface EditProductPageProps {
@@ -118,7 +118,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         })
       } catch (error) {
         console.error('Error fetching product:', error)
-        setError('Товар не найден')
+        setError('Ապրանքը չի գտնվել')
       } finally {
         setLoading(false)
       }
@@ -133,7 +133,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-t-transparent rounded-full animate-spin mx-auto mb-4" style={{ borderColor: '#f3d98c', borderTopColor: 'transparent' }}></div>
-          <p className="text-gray-600">Загрузка...</p>
+          <p className="text-gray-600">Բեռնվում է...</p>
         </div>
       </div>
     )
@@ -176,8 +176,9 @@ export default function EditProductPage({ params }: EditProductPageProps) {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
-        console.error('API Error:', errorData)
-        throw new Error(errorData.error || 'Failed to update product')
+        const errorMsg = errorData?.error || errorData?.message || response.statusText || 'Failed to update product'
+        console.error('API Error:', response.status, errorData)
+        throw new Error(errorMsg)
       }
 
       // Перенаправляем на страницу товаров
@@ -191,7 +192,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
   }
 
   const handleDelete = async () => {
-    if (!confirm('Вы уверены, что хотите удалить этот товар?')) {
+    if (!confirm('Վստահ ե՞ք, որ ցանկանում եք ջնջել այս ապրանքը։')) {
       return
     }
 
@@ -221,7 +222,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-t-transparent rounded-full animate-spin mx-auto mb-4" style={{ borderColor: '#f3d98c', borderTopColor: 'transparent' }}></div>
-          <p className="text-gray-600">Загрузка товара...</p>
+          <p className="text-gray-600">Ապրանքը բեռնվում է...</p>
         </div>
       </div>
     )
@@ -232,10 +233,10 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <X className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Товар не найден</h2>
-          <p className="text-gray-600 mb-4">Запрашиваемый товар не существует</p>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Ապրանքը չի գտնվել</h2>
+          <p className="text-gray-600 mb-4">Հարցված ապրանքը գոյություն չունի</p>
           <Link href="/admin/products">
-            <Button>Вернуться к товарам</Button>
+            <Button>Վերադառնալ ապրանքներին</Button>
           </Link>
         </div>
       </div>
@@ -256,12 +257,12 @@ export default function EditProductPage({ params }: EditProductPageProps) {
             <Link href="/admin/products">
               <Button variant="outline" size="sm" className="flex items-center gap-2">
                 <ArrowLeft className="h-4 w-4" />
-                Назад
+                Հետ
               </Button>
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Редактировать товар</h1>
-              <p className="text-gray-600 mt-2">Изменение информации о товаре</p>
+              <h1 className="text-3xl font-bold text-gray-900">Խմբագրել ապրանքը</h1>
+              <p className="text-gray-600 mt-2">Ապրանքի տեղեկատվության փոփոխում</p>
             </div>
           </div>
         </div>
@@ -269,7 +270,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         {/* Form */}
         <Card>
           <CardHeader>
-            <CardTitle>Информация о товаре</CardTitle>
+            <CardTitle>Ապրանքի տեղեկություն</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -286,25 +287,25 @@ export default function EditProductPage({ params }: EditProductPageProps) {
                 {/* Название */}
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Название товара *
+                    Ապրանքի անուն *
                   </label>
                   <Input
                     value={formData.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
-                    placeholder="Введите название товара"
+                    placeholder="Մուտքագրեք ապրանքի անունը"
                     required
                   />
                 </div>
 
-                {/* Описание */}
+                {/* Նկարագրություն */}
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Описание *
+                    Նկարագրություն *
                   </label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => handleInputChange('description', e.target.value)}
-                    placeholder="Введите описание товара"
+                    placeholder="Մուտքագրեք ապրանքի նկարագրությունը"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-900 bg-white"
                     rows={3}
                     required
@@ -314,7 +315,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
                 {/* Цена */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Цена (֏) *
+                    Գին (֏) *
                   </label>
                   <Input
                     type="number"
@@ -330,7 +331,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
                 {/* Скидочная цена */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Скидочная цена (֏)
+                    Զեղչված գին (֏)
                   </label>
                   <Input
                     type="number"
@@ -341,14 +342,14 @@ export default function EditProductPage({ params }: EditProductPageProps) {
                     placeholder="0.00"
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Оставьте пустым, если скидки нет
+                    Թողեք դատարկ, եթե զեղչ չկա
                   </p>
                 </div>
 
-                {/* Категория */}
+                {/* Կատեգորիա */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Категория *
+                    Կատեգորիա *
                   </label>
                   <select
                     value={formData.categoryId}
@@ -356,7 +357,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-900 bg-white"
                     required
                   >
-                    <option value="">Выберите категорию</option>
+                    <option value="">Ընտրեք կատեգորիա</option>
                     {categories.filter(cat => cat.isActive).map((category) => (
                       <option key={category.id} value={category.id}>
                         {category.name}
@@ -368,14 +369,14 @@ export default function EditProductPage({ params }: EditProductPageProps) {
                 {/* Статус */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Статус товара
+                    Ապրանքի կարգավիճակ
                   </label>
                   <select
                     value={formData.status}
                     onChange={(e) => handleInputChange('status', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-900 bg-white"
                   >
-                    <option value="">Не выбрано (обычный товар)</option>
+                    <option value="">Չի ընտրվել (սովորական ապրանք)</option>
                     {statuses.map((status) => (
                       <option key={status.value} value={status.value}>
                         {status.label}
@@ -387,7 +388,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
                 {/* Главное изображение */}
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Главное изображение товара
+                    Ապրանքի հիմնական նկար
                   </label>
                   <ImageSelector
                     value={formData.image}
@@ -407,35 +408,6 @@ export default function EditProductPage({ params }: EditProductPageProps) {
                   />
                 </div>
 
-                {/* Ингредиенты */}
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Ингредиенты
-                  </label>
-                  <Input
-                    value={formData.ingredients}
-                    onChange={(e) => handleInputChange('ingredients', e.target.value)}
-                    placeholder="Ингредиент 1, Ингредиент 2, Ингредиент 3"
-                  />
-                  <p className="text-sm text-gray-500 mt-1">
-                    Разделите ингредиенты запятыми
-                  </p>
-                </div>
-
-                {/* Доступность */}
-                <div className="md:col-span-2">
-                  <label className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      checked={formData.isAvailable}
-                      onChange={(e) => handleInputChange('isAvailable', e.target.checked)}
-                      className="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
-                    />
-                    <span className="text-sm font-medium text-gray-700">
-                      Товар доступен для заказа
-                    </span>
-                  </label>
-                </div>
               </div>
 
               {/* Кнопки */}
@@ -448,13 +420,13 @@ export default function EditProductPage({ params }: EditProductPageProps) {
                   className="flex items-center gap-2"
                 >
                   <Trash2 className="h-4 w-4" />
-                  Удалить товар
+                  Ջնջել ապրանքը
                 </Button>
 
                 <div className="flex items-center gap-4">
                   <Link href="/admin/products">
                     <Button type="button" variant="outline">
-                      Отмена
+                      Չեղարկել
                     </Button>
                   </Link>
                   <Button type="submit" disabled={saving} className="flex items-center gap-2">
@@ -463,7 +435,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
                     ) : (
                       <Save className="h-4 w-4" />
                     )}
-                    {saving ? 'Сохранение...' : 'Сохранить изменения'}
+                    {saving ? 'Պահպանվում է...' : 'Պահպանել փոփոխությունները'}
                   </Button>
                 </div>
               </div>
