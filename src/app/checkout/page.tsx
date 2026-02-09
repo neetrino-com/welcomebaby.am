@@ -234,7 +234,9 @@ export default function CheckoutPage() {
           throw new Error(err.error || 'Idram init failed')
         }
         const { formUrl, formData: idramFormData } = await initRes.json()
-        clearCart()
+        // Сохраняем orderId на случай, если Idram при редиректе на FAIL_URL не добавит его в URL — тогда order-success возьмёт из sessionStorage
+        if (typeof window !== 'undefined') window.sessionStorage.setItem('idram_pending_order_id', order.id)
+        // Не очищаем корзину здесь — иначе useEffect увидит items.length === 0 и редирект на /cart до form.submit(); корзину очистим на order-success при возврате с Idram
         const form = document.createElement('form')
         form.method = 'POST'
         form.action = formUrl
