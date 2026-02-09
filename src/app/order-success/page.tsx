@@ -14,25 +14,47 @@ function OrderSuccessContent() {
   const markFailedSent = useRef(false)
 
   const error = searchParams.get('error')
-  const orderId = searchParams.get('orderId') ?? searchParams.get('EDP_BILL_NO') ?? ''
+  const orderIdFromUrl = searchParams.get('orderId') ?? searchParams.get('EDP_BILL_NO') ?? ''
   const clearCartParam = searchParams.get('clearCart')
   const hasError = !!error
 
-  // При возврате с Idram по FAIL_URL помечаем заказ как «оплата не прошла» (как в Bank-integration-shop)
+  // orderId: из URL или из sessionStorage (сохраняем перед редиректом на Idram, если Idram не добавил в FAIL_URL)
+  const [orderId, setOrderId] = useState(orderIdFromUrl)
+  useEffect(() => {
+    if (orderIdFromUrl) {
+      setOrderId(orderIdFromUrl)
+      return
+    }
+    if (typeof window !== 'undefined' && hasError) {
+      const fromStorage = window.sessionStorage.getItem('idram_pending_order_id')
+      if (fromStorage) setOrderId(fromStorage)
+    }
+  }, [orderIdFromUrl, hasError])
+
+  // При возврате с Idram по FAIL_URL помечаем заказ как «оплата не прошла»
   useEffect(() => {
     if (!hasError || !orderId || markFailedSent.current) return
     markFailedSent.current = true
     fetch(`/api/orders/${encodeURIComponent(orderId)}/mark-payment-failed`, {
       method: 'POST',
     }).catch(() => {})
+    if (typeof window !== 'undefined') window.sessionStorage.removeItem('idram_pending_order_id')
   }, [hasError, orderId])
 
+  // При успешном возврате с Idram убираем сохранённый orderId
   useEffect(() => {
-    if (!hasError && clearCartParam === 'true' && !cartCleared) {
+    if (!hasError && typeof window !== 'undefined') window.sessionStorage.removeItem('idram_pending_order_id')
+  }, [hasError])
+
+  // Очищаем корзину: при успехе с clearCart=true (наличные/карта или возврат с Idram success) или при возврате с Idram fail (error + orderId)
+  useEffect(() => {
+    if (cartCleared) return
+    const shouldClear = (!hasError && clearCartParam === 'true') || (hasError && !!orderId)
+    if (shouldClear) {
       clearCart()
       setCartCleared(true)
     }
-  }, [hasError, clearCartParam, cartCleared, clearCart])
+  }, [hasError, clearCartParam, orderId, cartCleared, clearCart])
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#ffffff' }}>

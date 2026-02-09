@@ -148,3 +148,19 @@ RESULT_URL, SUCCESS_URL, FAIL_URL не хранятся в .env в явном в
 - в init при наличии сессии проверяет владельца заказа.
 
 Текущий welcomebaby.am уже близок к этому; для «полностью правильной» версии стоит: привести путь к **/api/payments/idram/** везде, добавить модуль **lib/payments/idram**, унифицировать order-success под один сценарий с Bank-integration-shop и зарегистрировать у Idram URL как в разделе 2.4.
+
+---
+
+## 5. Что сделано с нашей стороны (welcomebaby.am)
+
+**Зарегистрировано у Idram:**
+- **RESULT_URL:** `https://welcomebaby.am/api/payments/idram/callback`
+- **SUCCESS_URL:** `https://welcomebaby.am/order-success?clearCart=true`
+- **FAIL_URL:** `https://welcomebaby.am/order-success?error=payment_failed`
+
+**Реализация:**
+- Checkout при оплате Idram: заказ создаётся → вызов init → **перед** form.submit() в sessionStorage пишется `idram_pending_order_id` (order.id); корзина **не** очищается до редиректа (иначе мелькает пустая корзина).
+- Order-success: `orderId` берётся из URL (`orderId`, `EDP_BILL_NO`) или, если пришли по FAIL_URL без orderId в URL, из sessionStorage (`idram_pending_order_id`). По приходу с FAIL вызывается `mark-payment-failed`, затем ключ из sessionStorage удаляется; при успехе ключ тоже удаляется.
+- Корзина очищается при успехе (clearCart=true) или при возврате с fail (если есть orderId — из URL или sessionStorage).
+- Callback: precheck + подтверждение, проверка подписи по сумме из БД, идемпотентность; ответ строго "OK", text/plain.
+- Тест/прод: только при явном `IDRAM_TEST_MODE=true` используются тестовые учётки; иначе всегда `IDRAM_REC_ACCOUNT` и `IDRAM_SECRET_KEY`.
