@@ -48,6 +48,14 @@ const statusBorderColors: Record<string, string> = {
   CANCELLED: 'border-red-300',
 }
 
+const PAYMENT_LABELS: Record<string, string> = {
+  cash: 'Կանխիկ',
+  card: 'Քարտ',
+  idram: 'Idram',
+  arca: 'ArCa',
+  ameriabank: 'Ameriabank',
+}
+
 const ORDER_TABS = [
   { value: 'PENDING', label: 'Սպասում' },
   { value: 'CONFIRMED', label: 'Հաստատված' },
@@ -136,7 +144,7 @@ export default function AdminOrderDetailsModal({
               <div className="text-lg font-semibold text-orange-600">
                 {order.totalAmount.toLocaleString()} ֏
               </div>
-              <div className="text-sm font-medium text-neutral-700">{order.paymentMethod}</div>
+              <div className="text-sm font-medium text-neutral-700">{PAYMENT_LABELS[order.paymentMethod] ?? order.paymentMethod}</div>
             </div>
           </div>
           <div className="bg-neutral-50 border border-neutral-200 rounded-2xl p-6">
