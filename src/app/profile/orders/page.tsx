@@ -19,6 +19,7 @@ import type { OrderSummary, OrdersListResponse } from '@/types'
 
 const PAGE_SIZE = 10
 
+/** Статусы заказа: правильные подписи (оплачен → պատվերն ընդունված, далее մշակվում է) */
 const ORDER_STATUS_CONFIG: Record<
   string,
   { text: string; className: string; icon: typeof Clock }
@@ -29,12 +30,12 @@ const ORDER_STATUS_CONFIG: Record<
     icon: Clock,
   },
   CONFIRMED: {
-    text: 'Հաստատված',
+    text: 'Պատվերն ընդունված է',
     className: 'bg-blue-50 text-blue-700 border-blue-200',
     icon: Package,
   },
   PREPARING: {
-    text: 'Պատրաստվում է',
+    text: 'Մշակվում է',
     className: 'bg-[#f3d98c]/20 text-[#002c45] border-[#f3d98c]/40',
     icon: Package,
   },
@@ -55,7 +56,7 @@ const ORDER_STATUS_CONFIG: Record<
   },
 }
 
-/** Для онлайн-оплаты при FAILED/PENDING показываем статус оплаты (как в Bank-integration-shop) */
+/** Статусы оплаты: для всех способов (онлайн + նալիկ/карта при получении) */
 const PAYMENT_STATUS_CONFIG: Record<
   string,
   { text: string; className: string; icon: typeof Clock }
@@ -65,12 +66,24 @@ const PAYMENT_STATUS_CONFIG: Record<
     className: 'bg-amber-50 text-amber-700 border-amber-200',
     icon: Clock,
   },
+  SUCCESS: {
+    text: 'Վճարված',
+    className: 'bg-green-50 text-green-700 border-green-200',
+    icon: CheckCircle,
+  },
   FAILED: {
     text: 'Վճարումը ձախողվել',
     className: 'bg-red-50 text-red-600 border-red-200',
     icon: XCircle,
   },
 }
+
+/** Для заказов наличными/картой при получении — ожидаем оплаты при доставке */
+const PAYMENT_ON_DELIVERY = {
+  text: 'Սպասում ենք վճարման',
+  className: 'bg-amber-50 text-amber-700 border-amber-200',
+  icon: Clock,
+} as const
 
 export default function ProfileOrdersPage() {
   const { data: session } = useSession()
@@ -193,22 +206,21 @@ export default function ProfileOrdersPage() {
                 order.paymentMethod === 'idram' ||
                 order.paymentMethod === 'ameriabank'
               const paymentStatus = order.paymentStatus ?? 'PENDING'
-              const usePaymentLabel =
-                isOnlinePayment &&
-                (paymentStatus === 'FAILED' || paymentStatus === 'PENDING')
-              const config = usePaymentLabel
-                ? PAYMENT_STATUS_CONFIG[paymentStatus] ??
-                  ORDER_STATUS_CONFIG[order.status] ?? {
-                    text: order.status,
-                    className: 'bg-neutral-100 text-neutral-600 border-neutral-200',
-                    icon: Clock,
-                  }
-                : ORDER_STATUS_CONFIG[order.status] ?? {
-                    text: order.status,
-                    className: 'bg-neutral-100 text-neutral-600 border-neutral-200',
-                    icon: Clock,
-                  }
-              const StatusIcon = config.icon
+              const displayStatus =
+                !isOnlinePayment && order.status === 'PENDING'
+                  ? 'CONFIRMED'
+                  : order.status
+              const orderCfg =
+                ORDER_STATUS_CONFIG[displayStatus] ?? {
+                  text: order.status,
+                  className: 'bg-neutral-100 text-neutral-600 border-neutral-200',
+                  icon: Clock,
+                }
+              const paymentCfg = isOnlinePayment
+                ? PAYMENT_STATUS_CONFIG[paymentStatus] ?? null
+                : PAYMENT_ON_DELIVERY
+              const OrderIcon = orderCfg.icon
+              const PaymentIcon = paymentCfg.icon
               return (
                 <li key={order.id}>
                   <button
@@ -235,15 +247,21 @@ export default function ProfileOrdersPage() {
                           {order.firstItemName ? ` · ${order.firstItemName}` : ''}
                         </p>
                       </div>
-                      <div className="flex items-center gap-3 sm:flex-col sm:items-end">
-                        <p className="text-lg font-bold text-neutral-900">
+                      <div className="flex flex-wrap items-center gap-2 sm:flex-col sm:items-end">
+                        <p className="text-lg font-bold text-neutral-900 w-full sm:w-auto text-right">
                           {formatPrice(order.total)} ֏
                         </p>
                         <span
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border ${config.className}`}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border ${orderCfg.className}`}
                         >
-                          <StatusIcon className="h-3.5 w-3.5" />
-                          {config.text}
+                          <OrderIcon className="h-3.5 w-3.5" />
+                          {orderCfg.text}
+                        </span>
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border ${paymentCfg.className}`}
+                        >
+                          <PaymentIcon className="h-3.5 w-3.5" />
+                          {paymentCfg.text}
                         </span>
                       </div>
                     </div>

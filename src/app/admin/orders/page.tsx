@@ -78,8 +78,8 @@ const statusBorderColors = {
 
 const statusLabels: Record<string, string> = {
   PENDING: 'Սպասում',
-  CONFIRMED: 'Հաստատված',
-  PREPARING: 'Պատրաստվում',
+  CONFIRMED: 'Պատվերն ընդունված է',
+  PREPARING: 'Մշակվում է',
   READY: 'Պատրաստ',
   DELIVERED: 'Առաքված',
   CANCELLED: 'Չեղարկված'
@@ -88,8 +88,8 @@ const statusLabels: Record<string, string> = {
 const ORDER_TABS = [
   { value: '', label: 'Բոլորը' },
   { value: 'PENDING', label: 'Սպասում' },
-  { value: 'CONFIRMED', label: 'Հաստատված' },
-  { value: 'PREPARING', label: 'Պատրաստվում' },
+  { value: 'CONFIRMED', label: 'Պատվերն ընդունված է' },
+  { value: 'PREPARING', label: 'Մշակվում է' },
   { value: 'READY', label: 'Պատրաստ' },
   { value: 'DELIVERED', label: 'Առաքված' },
   { value: 'CANCELLED', label: 'Չեղարկված' }

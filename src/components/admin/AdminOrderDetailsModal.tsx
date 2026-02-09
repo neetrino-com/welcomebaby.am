@@ -70,8 +70,8 @@ const paymentStatusLabels: Record<string, string> = {
 
 const ORDER_TABS = [
   { value: 'PENDING', label: 'Սպասում' },
-  { value: 'CONFIRMED', label: 'Հաստատված' },
-  { value: 'PREPARING', label: 'Պատրաստվում' },
+  { value: 'CONFIRMED', label: 'Պատվերն ընդունված է' },
+  { value: 'PREPARING', label: 'Մշակվում է' },
   { value: 'READY', label: 'Պատրաստ' },
   { value: 'DELIVERED', label: 'Առաքված' },
   { value: 'CANCELLED', label: 'Չեղարկված' },

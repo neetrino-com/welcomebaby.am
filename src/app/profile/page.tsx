@@ -23,6 +23,8 @@ import { formatPrice } from '@/utils/priceUtils'
 interface Order {
   id: string
   status: string
+  paymentStatus?: string | null
+  paymentMethod?: string
   total: number
   createdAt: string
   itemCount?: number
@@ -175,9 +177,9 @@ export default function ProfilePage() {
       case 'PENDING':
         return { text: 'Սպասում է հաստատման', color: 'text-yellow-600', bg: 'bg-yellow-100' }
       case 'CONFIRMED':
-        return { text: 'Հաստատված', color: 'text-blue-600', bg: 'bg-blue-100' }
+        return { text: 'Պատվերն ընդունված է', color: 'text-blue-600', bg: 'bg-blue-100' }
       case 'PREPARING':
-        return { text: 'Պատրաստվում է', color: 'text-[#f3d98c]', bg: 'bg-[#f3d98c]/10' }
+        return { text: 'Մշակվում է', color: 'text-[#f3d98c]', bg: 'bg-[#f3d98c]/10' }
       case 'READY':
         return { text: 'Պատրաստ է հանձնման', color: 'text-purple-600', bg: 'bg-purple-100' }
       case 'DELIVERED':
@@ -186,6 +188,24 @@ export default function ProfilePage() {
         return { text: 'Չեղարկված', color: 'text-red-600', bg: 'bg-red-100' }
       default:
         return { text: status, color: 'text-gray-600', bg: 'bg-gray-100' }
+    }
+  }
+
+  const getPaymentStatusInfo = (order: Order) => {
+    const isOnline = order.paymentMethod === 'idram' || order.paymentMethod === 'ameriabank'
+    const ps = order.paymentStatus ?? 'PENDING'
+    if (!isOnline) {
+      return { text: 'Սպասում ենք վճարման', color: 'text-amber-700', bg: 'bg-amber-100' }
+    }
+    switch (ps) {
+      case 'PENDING':
+        return { text: 'Սպասում է վճարման', color: 'text-amber-700', bg: 'bg-amber-100' }
+      case 'SUCCESS':
+        return { text: 'Վճարված', color: 'text-green-700', bg: 'bg-green-100' }
+      case 'FAILED':
+        return { text: 'Վճարումը ձախողվել', color: 'text-red-600', bg: 'bg-red-100' }
+      default:
+        return { text: ps, color: 'text-gray-600', bg: 'bg-gray-100' }
     }
   }
 
@@ -294,7 +314,14 @@ export default function ProfilePage() {
                 ) : (
                   <div className="space-y-4">
                     {orders.map((order) => {
-                      const statusInfo = getStatusInfo(order.status)
+                      const isCashOrCard =
+                        order.paymentMethod !== 'idram' &&
+                        order.paymentMethod !== 'ameriabank'
+                      const displayStatus =
+                        isCashOrCard && order.status === 'PENDING'
+                          ? 'CONFIRMED'
+                          : order.status
+                      const statusInfo = getStatusInfo(displayStatus)
                       return (
                         <div
                           key={order.id}
@@ -313,14 +340,26 @@ export default function ProfilePage() {
                                 })}
                               </p>
                             </div>
-                            <div className="flex items-center gap-3">
+                            <div className="flex flex-wrap items-center gap-2">
                               <p className="text-lg font-bold text-gray-900">{formatPrice(order.total)} ֏</p>
                               <span
                                 className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium ${statusInfo.bg} ${statusInfo.color}`}
                               >
-                                {getStatusIcon(order.status)}
+                                {getStatusIcon(displayStatus)}
                                 {statusInfo.text}
                               </span>
+                              {(() => {
+                                const payInfo = getPaymentStatusInfo(order)
+                                const isPaid = order.paymentStatus === 'SUCCESS'
+                                return (
+                                  <span
+                                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium border ${payInfo.bg} ${payInfo.color}`}
+                                  >
+                                    {isPaid ? <CheckCircle className="h-3.5 w-3.5" /> : <Clock className="h-3.5 w-3.5" />}
+                                    {payInfo.text}
+                                  </span>
+                                )
+                              })()}
                             </div>
                           </div>
                           <div className="space-y-2">

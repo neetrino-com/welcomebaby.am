@@ -168,17 +168,18 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Как в Bank-integration-shop: для онлайн-оплаты (idram, ameriabank) — paymentStatus PENDING до подтверждения
     const paymentMethodVal = paymentMethod && typeof paymentMethod === 'string' ? paymentMethod : 'cash'
-    const paymentStatus =
-      paymentMethodVal === 'idram' || paymentMethodVal === 'ameriabank' ? 'PENDING' : null
+    const isOnlinePayment = paymentMethodVal === 'idram' || paymentMethodVal === 'ameriabank'
+    const paymentStatus = isOnlinePayment ? 'PENDING' : null
+    // Наличные/карта при получении — заказ сразу «принят», оплата потом; онлайн — PENDING до оплаты
+    const orderStatus = isOnlinePayment ? 'PENDING' : 'CONFIRMED'
 
     // Create order (supports both authenticated and guest users)
     const order = await prisma.order.create({
       data: {
         userId: session?.user?.id ?? null,
         name: (name && typeof name === 'string' && name.trim()) ? name.trim() : 'Guest Customer',
-        status: 'PENDING',
+        status: orderStatus,
         paymentStatus,
         total,
         address: String(address).trim(),
