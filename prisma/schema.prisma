@@ -71,6 +71,9 @@ model Order {
   phone           String
   notes           String?
   paymentMethod   String
+  paymentStatus   String?       // PENDING | PAID | FAILED (for online payment e.g. Idram)
+  paymentId      String?        // e.g. Idram EDP_TRANS_ID
+  paymentData    Json?         // e.g. { payerAccount, transDate, amount }
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   deliveryTime    String?

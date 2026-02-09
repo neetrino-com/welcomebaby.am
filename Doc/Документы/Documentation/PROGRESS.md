@@ -211,11 +211,19 @@
         - [x] Добавлен проп sizes для изображений в HorizontalCategorySlider
         - [x] Оптимизированы размеры изображений для разных экранов
         - [x] Устранены предупреждения о missing sizes prop
-      - [x] Исправлена ошибка загрузки изображений в ProductCard ✅ НОВОЕ
-        - [x] Создана утилита imageUtils.ts для проверки валидности изображений
-        - [x] Обновлена логика fallback для товаров без изображений
-        - [x] Используется nophoto.jpg как fallback изображение
-        - [x] Устранены ошибки 404 для несуществующих изображений
+- [x] Исправлена ошибка загрузки изображений в ProductCard ✅ НОВОЕ
+  - [x] Создана утилита imageUtils.ts для проверки валидности изображений
+  - [x] Обновлена логика fallback для товаров без изображений
+  - [x] Используется nophoto.jpg как fallback изображение
+  - [x] Устранены ошибки 404 для несуществующих изображений
+- [x] Интеграция платёжной системы Idram ✅ НОВОЕ
+  - [x] В модель Order добавлены поля paymentStatus, paymentId, paymentData (миграция add_order_payment_idram)
+  - [x] API POST /api/payment/idram/init — инициализация платежа (formUrl, formData для редиректа на banking.idram.am)
+  - [x] API POST /api/payment/idram/callback — обработка EDP_PRECHECK и подтверждения платежа, проверка EDP_CHECKSUM (MD5), идемпотентность
+  - [x] Страницы /payment/success и /payment/failed для возврата пользователя после оплаты
+  - [x] На checkout добавлен способ оплаты Idram; при выборе — создание заказа, вызов init, редирект на Idram
+  - [x] PAYMENT_LABELS с Idram в OrderDetailsModal и AdminOrderDetailsModal
+  - [x] Обновлён env.example (IDRAM_TEST_MODE, IDRAM_TEST_REC_ACCOUNT, IDRAM_TEST_SECRET_KEY, IDRAM_REC_ACCOUNT, IDRAM_SECRET_KEY)
 
 ---
 

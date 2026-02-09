@@ -52,6 +52,8 @@ export async function GET(request: NextRequest) {
     const items: OrderSummary[] = orders.map((order) => ({
       id: order.id,
       status: order.status,
+      paymentStatus: order.paymentStatus ?? null,
+      paymentMethod: order.paymentMethod,
       total: order.total,
       createdAt: order.createdAt.toISOString(),
       itemCount: order.items.length,
@@ -166,17 +168,24 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const paymentMethodVal = paymentMethod && typeof paymentMethod === 'string' ? paymentMethod : 'cash'
+    const isOnlinePayment = paymentMethodVal === 'idram'
+    const paymentStatus = isOnlinePayment ? 'PENDING' : null
+    // Наличные/карта при получении — заказ сразу «принят», оплата потом; онлайн — PENDING до оплаты
+    const orderStatus = isOnlinePayment ? 'PENDING' : 'CONFIRMED'
+
     // Create order (supports both authenticated and guest users)
     const order = await prisma.order.create({
       data: {
         userId: session?.user?.id ?? null,
         name: (name && typeof name === 'string' && name.trim()) ? name.trim() : 'Guest Customer',
-        status: 'PENDING',
+        status: orderStatus,
+        paymentStatus,
         total,
         address: String(address).trim(),
         phone: String(phone).trim(),
         notes: notesVal,
-        paymentMethod: paymentMethod && typeof paymentMethod === 'string' ? paymentMethod : 'cash',
+        paymentMethod: paymentMethodVal,
         deliveryTime: deliveryTime && typeof deliveryTime === 'string' ? deliveryTime : null,
         deliveryTypeId: deliveryTypeIdVal,
         items: {

@@ -19,6 +19,8 @@ export interface OrderWithItems extends Order {
 export interface OrderSummary {
   id: string
   status: string
+  paymentStatus: string | null
+  paymentMethod: string
   total: number
   createdAt: string
   itemCount: number
@@ -35,6 +37,8 @@ export interface OrderDetailsItem {
 export interface OrderDetails {
   id: string
   status: string
+  paymentStatus: string | null
+  paymentMethod: string
   total: number
   createdAt: string
   updatedAt: string
@@ -42,7 +46,6 @@ export interface OrderDetails {
   phone: string
   address: string
   notes: string | null
-  paymentMethod: string
   deliveryTime: string | null
   items: OrderDetailsItem[]
 }
@@ -84,7 +87,7 @@ export interface OrderFormData {
   phone: string
   address: string
   notes?: string
-  paymentMethod: 'idram' | 'arca' | 'ameriabank'
+  paymentMethod: 'idram' | 'cash' | 'card'
 }
 
 export interface ContactFormData {
@@ -113,9 +116,7 @@ export const PRODUCT_STATUS_LABELS: Record<ProductStatus, string> = {
 }
 
 export const PAYMENT_METHODS = {
-  idram: 'Idram',
-  arca: 'ArCa',
-  ameriabank: 'Ameriabank'
+  idram: 'Idram'
 } as const
 
 export type PaymentMethod = keyof typeof PAYMENT_METHODS

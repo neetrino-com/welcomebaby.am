@@ -6,7 +6,8 @@ import { formatPrice } from '@/utils/priceUtils'
 import type { OrderDetails } from '@/types'
 import BaseModal from '@/components/ui/BaseModal'
 
-const STATUS_CONFIG: Record<
+/** Статусы заказа (правильные подписи) */
+const ORDER_STATUS_CONFIG: Record<
   string,
   { text: string; className: string; icon: typeof Clock }
 > = {
@@ -16,12 +17,12 @@ const STATUS_CONFIG: Record<
     icon: Clock,
   },
   CONFIRMED: {
-    text: 'Հաստատված',
+    text: 'Պատվերն ընդունված է',
     className: 'bg-blue-50 text-blue-700 border-blue-200',
     icon: Package,
   },
   PREPARING: {
-    text: 'Պատրաստվում է',
+    text: 'Մշակվում է',
     className: 'bg-[#f3d98c]/20 text-[#002c45] border-[#f3d98c]/40',
     icon: Package,
   },
@@ -42,12 +43,39 @@ const STATUS_CONFIG: Record<
   },
 }
 
+/** Статусы оплаты: для всех способов (онлайн + наличные/карта при получении) */
+const PAYMENT_STATUS_LABELS: Record<
+  string,
+  { text: string; className: string; icon: typeof Clock }
+> = {
+  PENDING: {
+    text: 'Սպասում է վճարման',
+    className: 'bg-amber-50 text-amber-700 border-amber-200',
+    icon: Clock,
+  },
+  SUCCESS: {
+    text: 'Վճարված',
+    className: 'bg-green-50 text-green-700 border-green-200',
+    icon: CheckCircle,
+  },
+  FAILED: {
+    text: 'Վճարումը ձախողվել',
+    className: 'bg-red-50 text-red-600 border-red-200',
+    icon: XCircle,
+  },
+}
+
+/** Наличные/карта при получении — ожидаем оплаты при доставке */
+const PAYMENT_ON_DELIVERY = {
+  text: 'Սպասում ենք վճարման',
+  className: 'bg-amber-50 text-amber-700 border-amber-200',
+  icon: Clock,
+} as const
+
 const PAYMENT_LABELS: Record<string, string> = {
   cash: 'Կանխիկ',
   card: 'Քարտ',
   idram: 'Idram',
-  arca: 'ArCa',
-  ameriabank: 'Ameriabank',
 }
 
 interface OrderDetailsModalProps {
@@ -102,14 +130,25 @@ export default function OrderDetailsModal({
     }
   }, [isOpen])
 
-  const statusCfg = order
-    ? STATUS_CONFIG[order.status] ?? {
+  const isOnlinePayment =
+    order?.paymentMethod === 'idram'
+  const paymentStatus = order?.paymentStatus ?? 'PENDING'
+  const displayOrderStatus =
+    order && !isOnlinePayment && order.status === 'PENDING' ? 'CONFIRMED' : order?.status
+  const orderStatusCfg = order
+    ? ORDER_STATUS_CONFIG[displayOrderStatus ?? order.status] ?? {
         text: order.status,
         className: 'bg-neutral-100 text-neutral-600 border-neutral-200',
         icon: Clock,
       }
     : null
-  const StatusIcon = statusCfg?.icon ?? Clock
+  const paymentStatusCfg =
+    order
+      ? isOnlinePayment
+        ? PAYMENT_STATUS_LABELS[paymentStatus] ?? null
+        : PAYMENT_ON_DELIVERY
+      : null
+  const OrderStatusIcon = orderStatusCfg?.icon ?? Clock
 
   return (
     <BaseModal
@@ -166,12 +205,25 @@ export default function OrderDetailsModal({
                 <p className="font-semibold text-neutral-900">
                   Պատվեր #{order.id.slice(-8).toUpperCase()}
                 </p>
-                <span
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border ${statusCfg?.className}`}
-                >
-                  <StatusIcon className="h-3.5 w-3.5" />
-                  {statusCfg?.text}
-                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border ${orderStatusCfg?.className}`}
+                  >
+                    <OrderStatusIcon className="h-3.5 w-3.5" />
+                    {orderStatusCfg?.text}
+                  </span>
+                  {paymentStatusCfg && (() => {
+                    const PaymentStatusIcon = paymentStatusCfg.icon
+                    return (
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border ${paymentStatusCfg.className}`}
+                      >
+                        <PaymentStatusIcon className="h-3.5 w-3.5" />
+                        {paymentStatusCfg.text}
+                      </span>
+                    )
+                  })()}
+                </div>
               </div>
               <p className="text-sm text-neutral-500">
                 {new Date(order.createdAt).toLocaleDateString('hy-AM', {

@@ -61,6 +61,8 @@ export async function GET(
     const details: OrderDetails = {
       id: order.id,
       status: order.status,
+      paymentStatus: order.paymentStatus ?? null,
+      paymentMethod: order.paymentMethod,
       total: order.total,
       createdAt: order.createdAt.toISOString(),
       updatedAt: order.updatedAt.toISOString(),
@@ -68,7 +70,6 @@ export async function GET(
       phone: order.phone,
       address: order.address,
       notes: order.notes,
-      paymentMethod: order.paymentMethod,
       deliveryTime: order.deliveryTime,
       items: order.items.map((item) => ({
         product: {

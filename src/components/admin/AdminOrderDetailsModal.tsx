@@ -48,10 +48,28 @@ const statusBorderColors: Record<string, string> = {
   CANCELLED: 'border-red-300',
 }
 
+const PAYMENT_LABELS: Record<string, string> = {
+  cash: 'Կանխիկ',
+  card: 'Քարտ',
+  idram: 'Idram',
+}
+
+const paymentStatusColors: Record<string, string> = {
+  PENDING: 'bg-amber-100 border-amber-300',
+  SUCCESS: 'bg-green-100 border-green-300',
+  FAILED: 'bg-red-100 border-red-300',
+}
+
+const paymentStatusLabels: Record<string, string> = {
+  PENDING: 'Սպասում է վճարման',
+  SUCCESS: 'Վճարված',
+  FAILED: 'Վճարումը ձախողվել',
+}
+
 const ORDER_TABS = [
   { value: 'PENDING', label: 'Սպասում' },
-  { value: 'CONFIRMED', label: 'Հաստատված' },
-  { value: 'PREPARING', label: 'Պատրաստվում' },
+  { value: 'CONFIRMED', label: 'Պատվերն ընդունված է' },
+  { value: 'PREPARING', label: 'Մշակվում է' },
   { value: 'READY', label: 'Պատրաստ' },
   { value: 'DELIVERED', label: 'Առաքված' },
   { value: 'CANCELLED', label: 'Չեղարկված' },
@@ -74,6 +92,7 @@ interface AdminOrderDetailsModalProps {
   onClose: () => void
   order: OrderWithDetails | null
   onStatusUpdate: (orderId: string, newStatus: string) => void
+  onPaymentStatusUpdate: (orderId: string, newPaymentStatus: string) => void
 }
 
 export default function AdminOrderDetailsModal({
@@ -81,8 +100,11 @@ export default function AdminOrderDetailsModal({
   onClose,
   order,
   onStatusUpdate,
+  onPaymentStatusUpdate,
 }: AdminOrderDetailsModalProps) {
   if (!isOpen || !order) return null
+
+  const currentPaymentStatus = order.paymentStatus ?? ''
 
   return (
     <BaseModal
@@ -103,7 +125,7 @@ export default function AdminOrderDetailsModal({
           </Button>
         </div>
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className={`${statusBackgroundColors[order.status] || 'bg-neutral-100'} ${statusBorderColors[order.status] || 'border-neutral-300'} border rounded-2xl p-4`}>
               <div className="flex items-center gap-2 mb-3">
                 {getStatusIcon(order.status)}
@@ -136,7 +158,26 @@ export default function AdminOrderDetailsModal({
               <div className="text-lg font-semibold text-orange-600">
                 {order.totalAmount.toLocaleString()} ֏
               </div>
-              <div className="text-sm font-medium text-neutral-700">{order.paymentMethod}</div>
+              <div className="text-sm font-medium text-neutral-700">{PAYMENT_LABELS[order.paymentMethod] ?? order.paymentMethod}</div>
+            </div>
+            <div className={`${paymentStatusColors[currentPaymentStatus] || 'bg-neutral-50'} border rounded-2xl p-4`}>
+              <div className="flex items-center gap-2 mb-3">
+                <CreditCard className="h-4 w-4 text-neutral-500" />
+                <span className="font-medium text-neutral-900">Վճարման կարգավիճակ</span>
+              </div>
+              <select
+                value={currentPaymentStatus}
+                onChange={(e) => {
+                  const v = e.target.value
+                  if (v) onPaymentStatusUpdate(order.id, v)
+                }}
+                className={`w-full px-3 py-2 bg-white border-2 rounded-xl focus:ring-2 focus:ring-primary-500 text-neutral-900 font-medium ${currentPaymentStatus ? 'border-current' : 'border-neutral-200'}`}
+              >
+                <option value="">—</option>
+                <option value="PENDING">{paymentStatusLabels.PENDING}</option>
+                <option value="SUCCESS">{paymentStatusLabels.SUCCESS}</option>
+                <option value="FAILED">{paymentStatusLabels.FAILED}</option>
+              </select>
             </div>
           </div>
           <div className="bg-neutral-50 border border-neutral-200 rounded-2xl p-6">

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, MapPin, Clock, CreditCard, Phone, User, Truck } from 'lucide-react'
+import { ArrowLeft, MapPin, Clock, CreditCard, Phone, User, Truck, Smartphone } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
 import { useSession } from 'next-auth/react'
 import Footer from '@/components/Footer'
@@ -199,7 +199,6 @@ export default function CheckoutPage() {
     setIsSubmitting(true)
 
     try {
-      // Send order to API
       const orderData = {
         ...formData,
         deliveryTypeId: formData.deliveryTypeId || null,
@@ -213,27 +212,45 @@ export default function CheckoutPage() {
 
       const response = await fetch('/api/orders', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(orderData),
       })
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
-        console.error('Order creation failed:', {
-          status: response.status,
-          statusText: response.statusText,
-          error: errorData
-        })
-        throw new Error(`Failed to create order: ${errorData.error || response.statusText}`)
+        throw new Error(errorData.error || response.statusText)
       }
-      
-      console.log('Order created successfully, redirecting to order-success page')
-      
-      // Clear cart first
+
+      const order = await response.json()
+
+      if (formData.paymentMethod === 'idram') {
+        const initRes = await fetch('/api/payments/idram/init', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId: order.id }),
+        })
+        if (!initRes.ok) {
+          const err = await initRes.json().catch(() => ({}))
+          throw new Error(err.error || 'Idram init failed')
+        }
+        const { formUrl, formData: idramFormData } = await initRes.json()
+        clearCart()
+        const form = document.createElement('form')
+        form.method = 'POST'
+        form.action = formUrl
+        Object.entries(idramFormData).forEach(([key, value]) => {
+          const input = document.createElement('input')
+          input.type = 'hidden'
+          input.name = key
+          input.value = String(value)
+          form.appendChild(input)
+        })
+        document.body.appendChild(form)
+        form.submit()
+        return
+      }
+
       clearCart()
-      // Force redirect to success page using window.location
       window.location.href = '/order-success'
     } catch (error) {
       console.error('Error submitting order:', error)
@@ -488,6 +505,37 @@ export default function CheckoutPage() {
                       <p className="text-sm text-gray-600">Վճարում քարտով տերմինալով</p>
                     </div>
                     {formData.paymentMethod === 'card' && (
+                      <div className="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center">
+                        <svg className="h-4 w-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                </label>
+
+                <label className={`relative p-4 border-2 rounded-xl cursor-pointer transition-all duration-300 ${
+                  formData.paymentMethod === 'idram' 
+                    ? 'border-primary-500 bg-primary-50' 
+                    : 'border-gray-300'
+                }`}>
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="idram"
+                    checked={formData.paymentMethod === 'idram'}
+                    onChange={handleInputChange}
+                    className="sr-only"
+                  />
+                  <div className="flex items-center space-x-3">
+                    <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
+                      <Smartphone className="h-6 w-6 text-amber-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-base font-semibold text-gray-900">Idram</h3>
+                      <p className="text-sm text-gray-600">Վճարում Idram հավելվածով</p>
+                    </div>
+                    {formData.paymentMethod === 'idram' && (
                       <div className="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center">
                         <svg className="h-4 w-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -772,6 +820,37 @@ export default function CheckoutPage() {
                           <h3 className="text-lg font-semibold text-gray-900 mb-2">Քարտ</h3>
                           <p className="text-sm text-gray-600">Վճարում քարտով կուրիերի տերմինալով</p>
                           {formData.paymentMethod === 'card' && (
+                            <div className="absolute top-4 right-4">
+                              <div className="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center">
+                                <svg className="h-4 w-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </label>
+
+                      <label className={`relative p-6 border-2 rounded-xl cursor-pointer transition-all duration-300 hover:shadow-lg ${
+                        formData.paymentMethod === 'idram' 
+                          ? 'border-primary-500 bg-primary-50 shadow-md' 
+                          : 'border-gray-300 hover:border-primary-300'
+                      }`}>
+                        <input
+                          type="radio"
+                          name="paymentMethod"
+                          value="idram"
+                          checked={formData.paymentMethod === 'idram'}
+                          onChange={handleInputChange}
+                          className="sr-only"
+                        />
+                        <div className="text-center">
+                          <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Smartphone className="h-8 w-8 text-amber-600" />
+                          </div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2">Idram</h3>
+                          <p className="text-sm text-gray-600">Վճարում Idram հավելվածով</p>
+                          {formData.paymentMethod === 'idram' && (
                             <div className="absolute top-4 right-4">
                               <div className="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center">
                                 <svg className="h-4 w-4 text-white" fill="currentColor" viewBox="0 0 20 20">
