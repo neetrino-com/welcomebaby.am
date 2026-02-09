@@ -213,6 +213,7 @@ export default function DesktopHeader() {
               selectedIndex={selectedIndex}
               onResultClick={handleResultClick}
               onClose={() => setIsOpen(false)}
+              query={query}
               className="w-[480px] max-w-[520px] sm:w-[min(90vw,520px)]"
             />
           </div>
@@ -232,7 +233,7 @@ export default function DesktopHeader() {
             >
               <ShoppingCart className="h-6 w-6" />
               {isHydrated && getTotalItems() > 0 && (
-                <span className="absolute -top-1 -right-1 bg-primary-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 bg-white text-xs font-semibold rounded-full h-5 w-5 flex items-center justify-center shadow-sm" style={{ color: '#002c45' }}>
                   {getTotalItems()}
                 </span>
               )}

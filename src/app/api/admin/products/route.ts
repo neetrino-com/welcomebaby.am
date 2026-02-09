@@ -119,17 +119,25 @@ export async function GET(request: NextRequest) {
 
     const totalPages = Math.ceil(total / limitNum)
 
-    return NextResponse.json({
-      products: normalizedProducts,
-      pagination: {
-        currentPage: pageNum,
-        totalPages,
-        totalItems: total,
-        itemsPerPage: limitNum,
-        hasNextPage: pageNum < totalPages,
-        hasPrevPage: pageNum > 1
+    return NextResponse.json(
+      {
+        products: normalizedProducts,
+        pagination: {
+          currentPage: pageNum,
+          totalPages,
+          totalItems: total,
+          itemsPerPage: limitNum,
+          hasNextPage: pageNum < totalPages,
+          hasPrevPage: pageNum > 1
+        }
+      },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+          Pragma: 'no-cache'
+        }
       }
-    })
+    )
   } catch (error) {
     console.error('Error fetching admin products:', error)
     return NextResponse.json(

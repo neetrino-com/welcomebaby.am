@@ -4,11 +4,12 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useEffect, use } from 'react'
-import { ArrowLeft, ShoppingCart, Plus, Minus, Heart, Share2, Truck, Shield, RotateCcw } from 'lucide-react'
+import { ArrowLeft, ShoppingCart, Plus, Minus, Share2, Truck, Shield, RotateCcw } from 'lucide-react'
 import { Product } from '@/types'
 import Footer from '@/components/Footer'
 import ProductCard from '@/components/ProductCard'
 import ProductCarousel from '@/components/ProductCarousel'
+import { WishlistButton } from '@/components/WishlistButton'
 import { useCart } from '@/hooks/useCart'
 import { formatPrice } from '@/utils/priceUtils'
 import { isValidImagePath } from '@/utils/imageUtils'
@@ -25,7 +26,6 @@ export default function DefaultProductPage({
   const [quantity, setQuantity] = useState(1)
   const [addedToCart, setAddedToCart] = useState(false)
   const [addedToCartSimilar, setAddedToCartSimilar] = useState<Set<string>>(new Set())
-  const [isInWishlist, setIsInWishlist] = useState(false)
   const { addItem } = useCart()
 
   useEffect(() => {
@@ -61,10 +61,6 @@ export default function DefaultProductPage({
     }
   }
 
-  const handleToggleWishlist = () => {
-    setIsInWishlist(!isInWishlist)
-  }
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#ffffff' }}>
@@ -98,14 +94,11 @@ export default function DefaultProductPage({
           </Link>
           <h1 className="text-lg font-semibold text-gray-900 truncate">{product.name}</h1>
           <div className="flex items-center space-x-2">
-            <button
-              onClick={handleToggleWishlist}
-              className={`p-2 rounded-full transition-colors ${
-                isInWishlist ? 'text-red-500 bg-red-50' : 'text-gray-400 hover:text-red-500 hover:bg-red-50'
-              }`}
-            >
-              <Heart className={`h-5 w-5 ${isInWishlist ? 'fill-current' : ''}`} />
-            </button>
+            <WishlistButton
+              productId={product.id}
+              size="lg"
+              className="p-2 rounded-full bg-transparent shadow-none text-gray-400 hover:text-red-500 hover:bg-red-50"
+            />
             <button className="p-2 text-gray-400 hover:text-gray-600 rounded-full transition-colors">
               <Share2 className="h-5 w-5" />
             </button>
@@ -195,14 +188,13 @@ export default function DefaultProductPage({
                 </div>
 
                 {/* Wishlist Button - Desktop */}
-                <button
-                  onClick={handleToggleWishlist}
-                  className={`absolute top-4 right-4 p-2 rounded-full transition-colors ${
-                    isInWishlist ? 'text-red-500 bg-white shadow-lg' : 'text-gray-400 bg-white/80 hover:text-red-500 hover:bg-white'
-                  }`}
-                >
-                  <Heart className={`h-5 w-5 ${isInWishlist ? 'fill-current' : ''}`} />
-                </button>
+                <div className="absolute top-4 right-4">
+                  <WishlistButton
+                    productId={product.id}
+                    size="lg"
+                    className="p-2 rounded-full bg-white/80 hover:bg-white shadow-lg text-gray-400 hover:text-red-500"
+                  />
+                </div>
               </div>
             </div>
 

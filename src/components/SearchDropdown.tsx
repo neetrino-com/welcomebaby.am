@@ -1,7 +1,8 @@
 'use client'
 
+import Link from 'next/link'
 import { SearchResult } from '@/hooks/useInstantSearch'
-import { Search, Loader2 } from 'lucide-react'
+import { Search, Loader2, ChevronRight } from 'lucide-react'
 import { memo, useMemo } from 'react'
 import { formatPrice } from '@/utils/priceUtils'
 
@@ -13,6 +14,7 @@ interface SearchDropdownProps {
   selectedIndex: number
   onResultClick: (result: SearchResult) => void
   onClose: () => void
+  query?: string
   className?: string
 }
 
@@ -24,60 +26,77 @@ export const SearchDropdown = memo(function SearchDropdown({
   selectedIndex,
   onResultClick,
   onClose,
+  query = '',
   className = ''
 }: SearchDropdownProps) {
   // Мемоизируем состояние для оптимизации
   const hasResults = useMemo(() => results.length > 0, [results.length])
   const showEmptyState = useMemo(() => !loading && !error && !hasResults, [loading, error, hasResults])
   const showResults = useMemo(() => !loading && !error && hasResults, [loading, error, hasResults])
+  const hasQuery = Boolean(query.trim())
+  const viewAllHref = hasQuery ? `/products?search=${encodeURIComponent(query.trim())}` : ''
 
   if (!isOpen) return null
 
   return (
     <div 
       id="search-results"
-      className={`absolute top-full left-0 z-[1000] w-[480px] max-w-[520px] max-h-[420px] overflow-auto bg-white border border-black/10 rounded-2xl shadow-xl p-2 sm:w-[min(90vw,520px)] ${className}`}
+      className={`absolute top-full left-0 z-[1000] w-[480px] max-w-[520px] max-h-[420px] flex flex-col bg-white border border-black/10 rounded-2xl shadow-xl sm:w-[min(90vw,520px)] ${className}`}
       role="listbox"
       aria-label="Որոնման արդյունքներ"
     >
+      {/* Scrollable content */}
+      <div className={`flex-1 overflow-auto p-2 min-h-0 ${!hasQuery ? 'rounded-b-2xl' : ''}`}>
+        <div className="py-2">
+          {loading && (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="h-4 w-4 animate-spin text-[#f3d98c]" />
+              <span className="ml-2 text-gray-600 text-sm">Փնտրում...</span>
+            </div>
+          )}
 
-      {/* Content */}
-      <div className="py-2">
-        {loading && (
-          <div className="flex items-center justify-center py-4">
-            <Loader2 className="h-4 w-4 animate-spin text-[#f3d98c]" />
-            <span className="ml-2 text-gray-600 text-sm">Փնտրում...</span>
-          </div>
-        )}
+          {error && (
+            <div className="px-3 py-2 text-center text-red-600 text-xs">
+              {error}
+            </div>
+          )}
 
-        {error && (
-          <div className="px-3 py-2 text-center text-red-600 text-xs">
-            {error}
-          </div>
-        )}
+          {showEmptyState && (
+            <div className="px-3 py-4 text-center text-gray-500 text-sm">
+              <Search className="h-6 w-6 mx-auto mb-1 text-gray-300" />
+              <p>Արտադրանք չի գտնվել</p>
+              <p className="text-xs mt-1">Փորձեք փոխել որոնման հարցումը</p>
+            </div>
+          )}
 
-        {showEmptyState && (
-          <div className="px-3 py-4 text-center text-gray-500 text-sm">
-            <Search className="h-6 w-6 mx-auto mb-1 text-gray-300" />
-            <p>Արտադրանք չի գտնվել</p>
-            <p className="text-xs mt-1">Փորձեք փոխել որոնման հարցումը</p>
-          </div>
-        )}
-
-        {showResults && (
-          <div className="space-y-1">
-            {results.map((result, index) => (
-              <SearchResultItem
-                key={result.id}
-                result={result}
-                isSelected={index === selectedIndex}
-                onClick={() => onResultClick(result)}
-              />
-            ))}
-          </div>
-        )}
+          {showResults && (
+            <div className="space-y-1">
+              {results.map((result, index) => (
+                <SearchResultItem
+                  key={result.id}
+                  result={result}
+                  isSelected={index === selectedIndex}
+                  onClick={() => onResultClick(result)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
+      {/* Sticky footer: "Տեսնել բոլորը" — только при введённом запросе (все связанные товары) */}
+      {hasQuery && (
+        <div className="flex-shrink-0 border-t border-gray-200 sticky bottom-0 bg-white rounded-b-2xl">
+          <Link
+            href={viewAllHref}
+            onClick={onClose}
+            className="flex items-center justify-center gap-1.5 w-full py-3 px-4 text-sm font-semibold text-[#002c45] hover:bg-[#f3d98c]/20 transition-colors rounded-b-2xl"
+          >
+            Տեսնել բոլորը
+            <ChevronRight className="h-4 w-4" />
+          </Link>
+        </div>
+      )}
     </div>
   )
 })

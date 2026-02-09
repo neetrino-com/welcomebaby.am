@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useMemo } from 'react'
 import Link from 'next/link'
 import {
   Plus,
@@ -47,7 +47,8 @@ export default function AdminProducts() {
     totalItems: 0,
     itemsPerPage: 20
   })
-  const prevFiltersRef = useRef({ searchTerm: '', selectedCategory: '', selectedStatus: '', visibility: '', sortBy: '' })
+  const prevFiltersRef = useRef({ selectedCategory: '', selectedStatus: '', visibility: '', sortBy: '' })
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
     if (status === 'loading') return
@@ -58,25 +59,41 @@ export default function AdminProducts() {
     fetchCategories()
   }, [session, status, router])
 
+  // Загрузка с сервера только при смене страницы/фильтров (без search — поиск локальный)
   useEffect(() => {
     if (status === 'loading' || !session || session.user?.role !== 'ADMIN') return
     const filtersChanged =
-      prevFiltersRef.current.searchTerm !== searchTerm ||
       prevFiltersRef.current.selectedCategory !== selectedCategory ||
       prevFiltersRef.current.selectedStatus !== selectedStatus ||
       prevFiltersRef.current.visibility !== visibility ||
       prevFiltersRef.current.sortBy !== sortBy
-    if (filtersChanged) {
-      prevFiltersRef.current = { searchTerm, selectedCategory, selectedStatus, visibility, sortBy }
-      if (currentPage !== 1) {
-        setCurrentPage(1)
-        return
-      }
-    } else {
-      prevFiltersRef.current = { searchTerm, selectedCategory, selectedStatus, visibility, sortBy }
+    if (filtersChanged && currentPage !== 1) {
+      setCurrentPage(1)
+      return
     }
-    fetchProducts()
-  }, [session, status, router, currentPage, searchTerm, selectedCategory, selectedStatus, visibility, sortBy])
+    prevFiltersRef.current = { selectedCategory, selectedStatus, visibility, sortBy }
+    const controller = new AbortController()
+    if (abortControllerRef.current) abortControllerRef.current.abort()
+    abortControllerRef.current = controller
+    const pageToFetch = filtersChanged ? 1 : currentPage
+    fetchProducts(controller.signal, pageToFetch)
+    return () => {
+      controller.abort()
+    }
+  }, [session, status, router, currentPage, selectedCategory, selectedStatus, visibility, sortBy])
+
+  // Мгновенная фильтрация по загруженной странице (как в /admin/orders)
+  const filteredProducts = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase()
+    if (!term) return products
+    return products.filter((p) => {
+      const name = (p.name || '').toLowerCase()
+      const desc = (p.description || '').toLowerCase()
+      const id = (p.id || '').toLowerCase()
+      const catName = ((p as Product & { category?: { name: string } }).category?.name || '').toLowerCase()
+      return name.includes(term) || desc.includes(term) || id.includes(term) || catName.includes(term)
+    })
+  }, [products, searchTerm])
 
   const fetchCategories = async () => {
     try {
@@ -90,18 +107,24 @@ export default function AdminProducts() {
     }
   }
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (signal?: AbortSignal, pageOverride?: number) => {
+    const page = pageOverride ?? currentPage
     try {
       setIsLoading(true)
-      const params = new URLSearchParams({ page: currentPage.toString(), limit: '20' })
-      if (searchTerm) params.append('search', searchTerm)
+      const params = new URLSearchParams({ page: page.toString(), limit: '20' })
       if (selectedCategory) params.append('category', selectedCategory)
       if (selectedStatus) params.append('status', selectedStatus)
       if (visibility) params.append('visibility', visibility)
       if (sortBy) params.append('sortBy', sortBy)
-      const response = await fetch(`/api/admin/products?${params.toString()}`)
+      const response = await fetch(`/api/admin/products?${params.toString()}`, {
+        signal,
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' }
+      })
+      if (signal?.aborted) return
       if (response.ok) {
         const data = await response.json()
+        if (signal?.aborted) return
         setProducts(data.products || [])
         setPagination({
           totalPages: data.pagination?.totalPages || 1,
@@ -110,9 +133,10 @@ export default function AdminProducts() {
         })
       }
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') return
       console.error('Error fetching products:', error)
     } finally {
-      setIsLoading(false)
+      if (!signal?.aborted) setIsLoading(false)
     }
   }
 
@@ -212,10 +236,10 @@ export default function AdminProducts() {
   }
 
   const toggleSelectAll = () => {
-    if (selectedIds.size === products.length) {
+    if (selectedIds.size === filteredProducts.length) {
       setSelectedIds(new Set())
     } else {
-      setSelectedIds(new Set(products.map((p) => p.id)))
+      setSelectedIds(new Set(filteredProducts.map((p) => p.id)))
     }
   }
 
@@ -234,11 +258,11 @@ export default function AdminProducts() {
 
   const statusStats = {
     total: pagination.totalItems,
-    regular: products.filter((p) => p.status === 'REGULAR').length,
-    hit: products.filter((p) => p.status === 'HIT').length,
-    new: products.filter((p) => p.status === 'NEW').length,
-    classic: products.filter((p) => p.status === 'CLASSIC').length,
-    banner: products.filter((p) => p.status === 'BANNER').length
+    regular: filteredProducts.filter((p) => p.status === 'REGULAR').length,
+    hit: filteredProducts.filter((p) => p.status === 'HIT').length,
+    new: filteredProducts.filter((p) => p.status === 'NEW').length,
+    classic: filteredProducts.filter((p) => p.status === 'CLASSIC').length,
+    banner: filteredProducts.filter((p) => p.status === 'BANNER').length
   }
 
   const getStatusBadge = (productStatus: ProductStatus) => {
@@ -267,7 +291,7 @@ export default function AdminProducts() {
 
   if (!session || session.user?.role !== 'ADMIN') return null
 
-  const allSelected = products.length > 0 && selectedIds.size === products.length
+  const allSelected = filteredProducts.length > 0 && selectedIds.size === filteredProducts.length
   const someSelected = selectedIds.size > 0
 
   return (
@@ -291,12 +315,18 @@ export default function AdminProducts() {
               Փնտրել
             </label>
             <input
-              type="text"
+              type="search"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              placeholder="Անուն կամ նկարագրություն..."
+              placeholder="Անուն, նկարագրություն, ID, կատեգորիա..."
+              aria-label="Փնտրել ապրանքներ"
             />
+            {searchTerm.trim() && (
+              <p className="mt-1 text-xs text-neutral-500">
+                Փնտրում ըստ ընթացիկ էջի ({filteredProducts.length} արդյունք)
+              </p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-1">
@@ -353,7 +383,8 @@ export default function AdminProducts() {
       <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden">
         <div className="p-4 border-b border-neutral-200 flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-semibold text-neutral-900">
-            Ապրանքներ ({pagination.totalItems})
+            Ապրանքներ ({searchTerm.trim() ? filteredProducts.length : pagination.totalItems}
+            {searchTerm.trim() ? ` ընթացիկ էջում` : ''})
           </h2>
           <div className="flex items-center gap-2 text-sm">
             <span className="text-neutral-500">Ընդամենը: {statusStats.total}</span>
@@ -456,7 +487,7 @@ export default function AdminProducts() {
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-200">
-              {products.map((product) => {
+              {filteredProducts.map((product) => {
                 const statusBadge = getStatusBadge(product.status)
                 const catName = (product as Product & { category?: { name: string } }).category?.name || product.categoryId || '—'
                 const published = (product as Product & { published?: boolean }).published !== false
@@ -559,10 +590,10 @@ export default function AdminProducts() {
           </table>
         </div>
 
-        {products.length === 0 && !isLoading && (
+        {filteredProducts.length === 0 && !isLoading && (
           <div className="text-center py-12 text-neutral-500">
             <Package className="h-12 w-12 mx-auto mb-4 text-neutral-300" />
-            <p>Ապրանքներ չեն գտնվել</p>
+            <p>{searchTerm.trim() ? 'Որոնման արդյունքներ չեն գտնվել այս էջում' : 'Ապրանքներ չեն գտնվել'}</p>
           </div>
         )}
 

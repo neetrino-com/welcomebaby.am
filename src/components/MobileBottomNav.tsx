@@ -107,7 +107,7 @@ export default function MobileBottomNav() {
                       )
                     ) : (
                       getTotalItems() > 0 && (
-                        <span className="absolute -top-2 -right-2 text-white text-[10px] rounded-full h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center font-bold shadow-lg" style={{ backgroundColor: '#ffdd84' }}>
+                        <span className="absolute -top-2 -right-2 bg-white text-[10px] font-bold rounded-full h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center shadow-lg" style={{ color: '#002c45' }}>
                           {getTotalItems()}
                         </span>
                       )

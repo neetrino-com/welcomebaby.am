@@ -90,8 +90,41 @@ export default function AdminDashboard() {
         <p className="text-gray-600 text-sm">Կառավարեք կատալոգը, պատվերները և կարգավորումները</p>
       </div>
 
-      {/* Stats row - our colors */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {/* Stats row - товары, категории, заказы, пользователи, доход */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+        <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Ապրանքներ</p>
+              <p className="text-xl font-bold text-gray-900">{stats.totalProducts}</p>
+            </div>
+            <div className="p-2 rounded-lg" style={{ backgroundColor: '#f3d98c' }}>
+              <Package className="h-5 w-5" style={{ color: '#002c45' }} />
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Կատեգորիաներ</p>
+              <p className="text-xl font-bold text-gray-900">{stats.totalCategories}</p>
+            </div>
+            <div className="p-2 rounded-lg" style={{ backgroundColor: '#f3d98c' }}>
+              <Tag className="h-5 w-5" style={{ color: '#002c45' }} />
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Պատվերներ</p>
+              <p className="text-xl font-bold text-gray-900">{stats.totalOrders}</p>
+            </div>
+            <div className="p-2 rounded-lg" style={{ backgroundColor: '#f3d98c' }}>
+              <CheckCircle className="h-5 w-5" style={{ color: '#002c45' }} />
+            </div>
+          </div>
+        </div>
         <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-200">
           <div className="flex items-center justify-between">
             <div>

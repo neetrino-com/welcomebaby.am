@@ -90,7 +90,7 @@ export default function AdminOrderDetailsModal({
       onClose={onClose}
       closeOnOverlayClick={true}
       ariaLabelledBy="order-details-title"
-      contentClassName="w-[50%] max-w-full flex flex-col max-h-[calc(100vh-2rem)] overflow-hidden"
+      contentClassName="!w-full sm:!w-[50%] max-w-[95vw] sm:max-w-none flex flex-col max-h-[calc(100vh-2rem)] overflow-hidden"
     >
       <div className="flex flex-col flex-1 min-h-0">
         <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-neutral-200 rounded-t-2xl bg-white">

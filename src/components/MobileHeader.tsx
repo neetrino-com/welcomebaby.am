@@ -213,6 +213,7 @@ export default function MobileHeader() {
                    selectedIndex={selectedIndex}
                    onResultClick={handleResultClick}
                    onClose={() => setIsOpen(false)}
+                   query={query}
                    className="relative shadow-none border-0 rounded-xl w-full max-w-none"
                  />
                </div>
