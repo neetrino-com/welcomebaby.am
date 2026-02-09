@@ -10,7 +10,12 @@ import {
   Trash2,
   Package,
   Search,
-  Filter
+  Filter,
+  Check,
+  X,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react'
 import Pagination from '@/components/Pagination'
 import BulkActionsBar from '@/components/admin/BulkActionsBar'
@@ -27,7 +32,7 @@ export default function AdminProducts() {
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedStatus, setSelectedStatus] = useState('')
   const [visibility, setVisibility] = useState('') // '' | 'active' | 'draft'
-  const [sortBy, setSortBy] = useState<'' | 'price_asc' | 'price_desc'>('')
+  const [sortBy, setSortBy] = useState<'' | 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc' | 'stock_asc' | 'stock_desc'>('')
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false)
@@ -320,7 +325,11 @@ export default function AdminProducts() {
               className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-neutral-900 bg-white"
             >
               <option value="">Բոլորը</option>
-              <option value="special">Հատուկ</option>
+              <option value="REGULAR">Սովորական</option>
+              <option value="HIT">ՀԻՏ</option>
+              <option value="NEW">ՆՈՐ</option>
+              <option value="CLASSIC">ԿԼԱՍԻԿ</option>
+              <option value="BANNER">ԲԱՆՆԵՐ</option>
             </select>
           </div>
           <div>
@@ -395,24 +404,54 @@ export default function AdminProducts() {
                   />
                 </th>
                 <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Նկար</th>
-                <th className="px-4 py-2 text-left text-xs font-semibold text-neutral-600 uppercase min-w-[200px]">Անուն</th>
+                <th className="px-4 py-2 text-left text-xs font-semibold text-neutral-600 uppercase min-w-[200px]">
+                  <button
+                    type="button"
+                    onClick={() => setSortBy((s) => (s === '' || !s.startsWith('name_') ? 'name_asc' : s === 'name_asc' ? 'name_desc' : ''))}
+                    className="inline-flex items-center gap-1 hover:text-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 rounded"
+                    title={sortBy === 'name_asc' ? 'Ա-Ֆ' : sortBy === 'name_desc' ? 'Ֆ-Ա' : 'Սորտավորել ըստ անուն'}
+                  >
+                    Անուն
+                    <span className="inline-flex flex-col leading-none text-[10px]">
+                      {sortBy === 'name_asc' && <ArrowUp className="h-3 w-3 text-primary-500" />}
+                      {sortBy === 'name_desc' && <ArrowDown className="h-3 w-3 text-primary-500" />}
+                      {sortBy !== 'name_asc' && sortBy !== 'name_desc' && <ArrowUpDown className="h-3 w-3 text-neutral-400" />}
+                    </span>
+                  </button>
+                </th>
                 <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Կատեգորիա</th>
                 <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">
                   <button
                     type="button"
-                    onClick={() => setSortBy((s) => (s === '' ? 'price_asc' : s === 'price_asc' ? 'price_desc' : ''))}
+                    onClick={() => setSortBy((s) => (s === '' || !s.startsWith('price_') ? 'price_asc' : s === 'price_asc' ? 'price_desc' : ''))}
                     className="inline-flex items-center gap-1 hover:text-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 rounded"
                     title={sortBy === 'price_asc' ? 'Նվազման կարգով' : sortBy === 'price_desc' ? 'Չեղարկել սորտավորում' : 'Աճման կարգով'}
                   >
                     Գին
-                    {sortBy === 'price_asc' && <span className="text-primary-500">↑</span>}
-                    {sortBy === 'price_desc' && <span className="text-primary-500">↓</span>}
+                    <span className="inline-flex flex-col leading-none text-[10px]">
+                      {sortBy === 'price_asc' && <ArrowUp className="h-3 w-3 text-primary-500" />}
+                      {sortBy === 'price_desc' && <ArrowDown className="h-3 w-3 text-primary-500" />}
+                      {sortBy !== 'price_asc' && sortBy !== 'price_desc' && <ArrowUpDown className="h-3 w-3 text-neutral-400" />}
+                    </span>
                   </button>
                 </th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Լեյբլ</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Կարգավիճակ</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">
+                  <button
+                    type="button"
+                    onClick={() => setSortBy((s) => (s === '' || !s.startsWith('stock_') ? 'stock_asc' : s === 'stock_asc' ? 'stock_desc' : ''))}
+                    className="inline-flex items-center gap-1 hover:text-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 rounded"
+                    title={sortBy === 'stock_asc' ? 'Աճում' : sortBy === 'stock_desc' ? 'Նվազում' : 'Սորտավորել ըստ մնացորդ'}
+                  >
+                    Մնացորդ
+                    <span className="inline-flex flex-col leading-none text-[10px]">
+                      {sortBy === 'stock_asc' && <ArrowUp className="h-3 w-3 text-primary-500" />}
+                      {sortBy === 'stock_desc' && <ArrowDown className="h-3 w-3 text-primary-500" />}
+                      {sortBy !== 'stock_asc' && sortBy !== 'stock_desc' && <ArrowUpDown className="h-3 w-3 text-neutral-400" />}
+                    </span>
+                  </button>
+                </th>
                 <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Առկայություն</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Մնացորդ</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Լեյբլ</th>
                 <th className="px-3 py-2 text-center text-xs font-semibold text-neutral-600 uppercase">Գործողություններ</th>
               </tr>
             </thead>
@@ -459,37 +498,44 @@ export default function AdminProducts() {
                         <span className="font-semibold text-neutral-900">{product.price} ֏</span>
                       )}
                     </td>
-                    <td className="px-3 py-2">
-                      {statusBadge ? (
-                        <span className={`px-2 py-0.5 rounded text-xs font-medium border ${statusBadge.className}`}>{statusBadge.text}</span>
-                      ) : (
-                        <span className="text-xs text-neutral-400">Սովորական</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={published}
-                          disabled={isUpdatingStatus}
-                          onChange={() => handleStatusToggle(product.id, published)}
-                          className="rounded border-neutral-300 text-primary-500 focus:ring-primary-500"
-                          aria-label={published ? 'Ակտիվ' : 'Սևագիր'}
-                        />
-                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${published ? 'bg-green-100 text-green-800' : 'bg-neutral-200 text-neutral-700'}`}>
-                          {published ? 'Ակտիվ' : 'Սևագիր'}
-                        </span>
-                        {isUpdatingStatus && <span className="inline-block w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />}
-                      </label>
-                    </td>
+                    <td className="px-3 py-2 text-sm font-medium">{(product.stock || 0)}</td>
                     <td className="px-3 py-2">
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${product.isAvailable ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                         {product.isAvailable ? 'Առկա' : 'Սպառված'}
                       </span>
                     </td>
-                    <td className="px-3 py-2 text-sm font-medium">{(product.stock || 0)}</td>
                     <td className="px-3 py-2">
-                      <div className="flex items-center justify-center gap-1">
+                      {statusBadge ? (
+                        <span className={`px-2 py-0.5 rounded text-xs font-medium border ${statusBadge.className}`}>{statusBadge.text}</span>
+                      ) : (
+                        <span className="text-xs text-neutral-300 tracking-widest">________</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2">
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          type="button"
+                          disabled={isUpdatingStatus}
+                          onClick={() => handleStatusToggle(product.id, published)}
+                          className={`relative inline-flex h-7 w-12 shrink-0 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neutral-400 ${published ? 'bg-green-500' : 'bg-red-500'}`}
+                          aria-label={published ? 'Ակտիվ' : 'Սևագիր'}
+                          title={published ? 'Ակտիվ (սեղմեք՝ սևագիր)' : 'Սևագիր (սեղմեք՝ ակտիվ)'}
+                        >
+                          <span
+                            className={`pointer-events-none absolute top-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-white shadow transition-all duration-200 ${published ? 'left-[calc(100%-26px)]' : 'left-0.5'}`}
+                          >
+                            {published ? (
+                              <Check className="h-3.5 w-3.5 text-green-600" strokeWidth={2.5} />
+                            ) : (
+                              <X className="h-3.5 w-3.5 text-red-600" strokeWidth={2.5} />
+                            )}
+                          </span>
+                          {isUpdatingStatus && (
+                            <span className="absolute inset-0 flex items-center justify-center rounded-full bg-white/60">
+                              <span className="h-4 w-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                            </span>
+                          )}
+                        </button>
                         <Link
                           href={`/admin/products/${product.id}/edit`}
                           className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"

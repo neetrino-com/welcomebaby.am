@@ -33,6 +33,7 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '10')
     const skip = (page - 1) * limit
+    const sortBy = searchParams.get('sortBy') || ''
 
     // Строим фильтр
     const whereClause: { status?: OrderStatus; createdAt?: { gte?: Date; lte?: Date } } = {}
@@ -75,9 +76,11 @@ export async function GET(request: NextRequest) {
             }
           }
         },
-        orderBy: {
-          createdAt: 'desc'
-        },
+        orderBy: sortBy === 'name_asc'
+          ? { name: 'asc' }
+          : sortBy === 'name_desc'
+            ? { name: 'desc' }
+            : { createdAt: 'desc' },
         skip,
         take: limit
       }),

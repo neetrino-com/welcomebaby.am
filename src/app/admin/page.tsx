@@ -3,15 +3,12 @@
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
 import {
   Package,
-  ShoppingCart,
   Users,
   DollarSign,
   CheckCircle,
   Tag,
-  Truck,
 } from 'lucide-react'
 
 interface Stats {
@@ -86,37 +83,6 @@ export default function AdminDashboard() {
     )
   }
 
-  const adminSections = [
-    {
-      title: 'Ապրանքներ',
-      description: 'Կատալոգի և ապրանքների կառավարում',
-      href: '/admin/products',
-      icon: Package,
-      stats: `${stats.totalProducts} ապրանք`,
-    },
-    {
-      title: 'Կատեգորիաներ',
-      description: 'Կատեգորիաների կառավարում',
-      href: '/admin/categories',
-      icon: Tag,
-      stats: `${stats.totalCategories} կատեգորիա`,
-    },
-    {
-      title: 'Պատվերներ',
-      description: 'Պատվերների դիտում և մշակում',
-      href: '/admin/orders',
-      icon: ShoppingCart,
-      stats: `${stats.totalOrders} պատվեր`,
-    },
-    {
-      title: 'Առաքման տեսակներ',
-      description: 'Առաքման եղանակների կառավարում',
-      href: '/admin/delivery-types',
-      icon: Truck,
-      stats: `${stats.totalDeliveryTypes} տեսակ`,
-    },
-  ]
-
   return (
     <div className="space-y-8">
       <div>
@@ -124,58 +90,8 @@ export default function AdminDashboard() {
         <p className="text-gray-600 text-sm">Կառավարեք կատալոգը, պատվերները և կարգավորումները</p>
       </div>
 
-      {/* Section cards - our colors */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-        {adminSections.map((section) => {
-          const IconComponent = section.icon
-          return (
-            <Link
-              key={section.href}
-              href={section.href}
-              className="group bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 p-5 border border-gray-200 hover:border-[#f3d98c]/50"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div
-                  className="p-2.5 rounded-lg"
-                  style={{ backgroundColor: '#f3d98c' }}
-                >
-                  <IconComponent className="h-5 w-5" style={{ color: '#002c45' }} />
-                </div>
-                <span className="text-xs font-medium text-gray-500">{section.stats}</span>
-              </div>
-              <h3 className="text-base font-semibold text-gray-900 mb-1 group-hover:text-[#002c45] transition-colors">
-                {section.title}
-              </h3>
-              <p className="text-gray-600 text-sm">{section.description}</p>
-            </Link>
-          )
-        })}
-      </div>
-
       {/* Stats row - our colors */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Ընդամենը ապրանք</p>
-              <p className="text-xl font-bold text-gray-900">{stats.totalProducts}</p>
-            </div>
-            <div className="p-2 rounded-lg" style={{ backgroundColor: '#f3d98c' }}>
-              <Package className="h-5 w-5" style={{ color: '#002c45' }} />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Պատվերներ</p>
-              <p className="text-xl font-bold text-gray-900">{stats.totalOrders}</p>
-            </div>
-            <div className="p-2 rounded-lg" style={{ backgroundColor: '#f3d98c' }}>
-              <ShoppingCart className="h-5 w-5" style={{ color: '#002c45' }} />
-            </div>
-          </div>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-200">
           <div className="flex items-center justify-between">
             <div>

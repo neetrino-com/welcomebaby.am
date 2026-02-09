@@ -7,7 +7,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useInstantSearch } from '@/hooks/useInstantSearch'
 import { SearchDropdown } from '@/components/SearchDropdown'
 import { useSettings } from '@/hooks/useSettings'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useHydration } from '@/hooks/useHydration'
 import { createPortal } from 'react-dom'
 
@@ -15,6 +15,7 @@ export default function MobileHeader() {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
   const isHydrated = useHydration()
   const { settings } = useSettings()
   
@@ -143,7 +144,17 @@ export default function MobileHeader() {
                     placeholder="Поиск по каталогу..."
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    onKeyDown={handleKeyDown}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && query.trim()) {
+                        e.preventDefault()
+                        router.push(`/products?search=${encodeURIComponent(query.trim())}`)
+                        setIsOpen(false)
+                        setIsSearchOpen(false)
+                        clearSearch()
+                        return
+                      }
+                      handleKeyDown(e)
+                    }}
                     onFocus={() => {
                       // Открываем dropdown если есть результаты поиска (search-as-you-type)
                       if (query.length >= 1 && results.length > 0) {

@@ -35,12 +35,16 @@ function ProductsPageContent() {
   // Константы пагинации
   const ITEMS_PER_PAGE = 24
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (searchQuery?: string) => {
     try {
-      const response = await fetch('/api/products')
+      setLoading(true)
+      const url = searchQuery
+        ? `/api/products?search=${encodeURIComponent(searchQuery)}`
+        : '/api/products'
+      const response = await fetch(url)
       if (!response.ok) throw new Error(`Products API error: ${response.status}`)
       const data = await response.json()
-      setProducts(Array.isArray(data) ? data : [])
+      setProducts(Array.isArray(data) ? data : (data.products ?? data))
     } catch (error) {
       console.error('Error fetching products:', error)
       setProducts([])
@@ -104,15 +108,17 @@ function ProductsPageContent() {
     setCurrentPage(1) // Сбрасываем на первую страницу
   }, [products, selectedCategory, selectedCategoryId, sortBy, sortProducts])
 
+  const urlSearch = searchParams.get('search') || undefined
+
   useEffect(() => {
     const loadData = async () => {
       await Promise.all([
-        fetchProducts(),
+        fetchProducts(urlSearch),
         fetchCategories()
       ])
     }
     loadData()
-  }, [])
+  }, [urlSearch])
 
   // Обработка URL параметров
   useEffect(() => {

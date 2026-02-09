@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category') || ''
     const status = searchParams.get('status') || ''
     const visibility = searchParams.get('visibility') || '' // active | draft
-    const sortBy = searchParams.get('sortBy') || '' // price_asc | price_desc
+    const sortBy = searchParams.get('sortBy') || '' // price_asc | price_desc | name_asc | name_desc | stock_asc | stock_desc
 
     // Валидация параметров
     const pageNum = Math.max(1, page)
@@ -77,11 +77,20 @@ export async function GET(request: NextRequest) {
     })
 
     // Сортировка
-    const orderBy = sortBy === 'price_asc'
-      ? { price: 'asc' as const }
-      : sortBy === 'price_desc'
-        ? { price: 'desc' as const }
-        : { createdAt: 'desc' as const }
+    const orderBy =
+      sortBy === 'price_asc'
+        ? { price: 'asc' as const }
+        : sortBy === 'price_desc'
+          ? { price: 'desc' as const }
+          : sortBy === 'name_asc'
+            ? { name: 'asc' as const }
+            : sortBy === 'name_desc'
+              ? { name: 'desc' as const }
+              : sortBy === 'stock_asc'
+                ? { stock: 'asc' as const }
+                : sortBy === 'stock_desc'
+                  ? { stock: 'desc' as const }
+                  : { createdAt: 'desc' as const }
 
     // Получаем товары с пагинацией
     const products = await prisma.product.findMany({

@@ -81,7 +81,7 @@ export default function ProfileLayout({
 
         <div className="flex flex-col lg:flex-row lg:gap-8">
           {/* Desktop: sidebar */}
-          <aside className="hidden lg:block w-52 flex-shrink-0">
+          <aside className="hidden lg:block w-56 flex-shrink-0">
             <div className="sticky top-28 rounded-2xl border border-neutral-200 bg-white shadow-sm overflow-hidden">
               <div className="p-4 border-b border-neutral-100">
                 <Link
@@ -93,9 +93,6 @@ export default function ProfileLayout({
                 </Link>
               </div>
               <div className="p-3 border-b border-neutral-100 bg-neutral-50/50">
-                <p className="text-xs font-medium text-neutral-400 uppercase tracking-wider px-2 mb-1">
-                  Հաշիվ
-                </p>
                 <p className="font-semibold text-neutral-900 truncate px-2">
                   {session.user?.name || session.user?.email || 'Օգտատեր'}
                 </p>

@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { ShoppingCart, User, LogOut, Search, Heart } from 'lucide-react'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useState, useRef, useEffect } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { useCart } from '@/hooks/useCart'
@@ -18,6 +18,7 @@ export default function DesktopHeader() {
   const { data: session, status } = useSession()
   const { settings } = useSettings()
   const pathname = usePathname()
+  const router = useRouter()
   const [wishlistCount, setWishlistCount] = useState(0)
   
   // Instant search hook (search-as-you-type)
@@ -162,7 +163,15 @@ export default function DesktopHeader() {
                 placeholder="Փնտրել..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={handleKeyDown}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && query.trim()) {
+                    e.preventDefault()
+                    router.push(`/products?search=${encodeURIComponent(query.trim())}`)
+                    setIsOpen(false)
+                    return
+                  }
+                  handleKeyDown(e)
+                }}
                 onFocus={() => {
                   // Открываем dropdown если есть результаты поиска (search-as-you-type)
                   if (query.length >= 1 && results.length > 0) {

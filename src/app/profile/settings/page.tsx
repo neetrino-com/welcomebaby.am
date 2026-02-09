@@ -72,7 +72,7 @@ export default function ProfileSettingsPage() {
           </div>
           <div className="p-4">
             <p className="text-sm text-red-700/90 mb-4">
-              Հաշվի ջնջումը անշարժելի է։ Բոլոր տվյալները և պատվերների պատմությունը կվերանան։
+              Հաշվի ջնջումը անդառնալի է։ Ձեր բոլոր տվյալները և պատվերների պատմությունը կջնջվեն։
             </p>
             <button
               onClick={() => setIsDeleteModalOpen(true)}

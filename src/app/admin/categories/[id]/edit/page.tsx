@@ -153,7 +153,7 @@ export default function EditCategoryPage({ params }: EditCategoryPageProps) {
 
   return (
     <div className="min-h-screen bg-transparent">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 max-h-[calc(100vh-6rem)] overflow-y-auto">
         
         {/* Заголовок */}
         <div className="mb-8">

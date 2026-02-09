@@ -3,11 +3,11 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { Plus, Edit, Trash2, Search, Filter, Tag } from 'lucide-react'
 import Pagination from '@/components/Pagination'
 import BulkActionsBar from '@/components/admin/BulkActionsBar'
 import ConfirmModal from '@/components/admin/ConfirmModal'
+import CategoryFormModal from '@/components/admin/CategoryFormModal'
 
 const PAGE_SIZE = 10
 
@@ -38,6 +38,8 @@ export default function CategoriesPage() {
   const [bulkDeleting, setBulkDeleting] = useState(false)
   const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null)
   const [singleDeleting, setSingleDeleting] = useState(false)
+  const [addModalOpen, setAddModalOpen] = useState(false)
+  const [editCategory, setEditCategory] = useState<Category | null>(null)
 
   useEffect(() => {
     if (status === 'loading') return
@@ -172,13 +174,14 @@ export default function CategoriesPage() {
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <h1 className="text-xl font-bold text-neutral-900">Կատեգորիաներ</h1>
-        <Link
-          href="/admin/categories/new"
+        <button
+          type="button"
+          onClick={() => setAddModalOpen(true)}
           className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-primary-500 text-white hover:bg-primary-600"
         >
           <Plus className="h-5 w-5" />
           Ավելացնել կատեգորիա
-        </Link>
+        </button>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-4 mb-6">
@@ -302,13 +305,14 @@ export default function CategoriesPage() {
                   <td className="px-3 py-2 text-sm font-medium text-neutral-900">{category._count?.products ?? 0}</td>
                   <td className="px-3 py-2">
                     <div className="flex items-center justify-center gap-1">
-                      <Link
-                        href={`/admin/categories/${category.id}/edit`}
+                      <button
+                        type="button"
+                        onClick={() => setEditCategory(category)}
                         className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
                         title="Խմբագրել"
                       >
                         <Edit className="h-4 w-4" />
-                      </Link>
+                      </button>
                       <button
                         type="button"
                         onClick={() => setCategoryToDelete(category.id)}
@@ -369,6 +373,21 @@ export default function CategoriesPage() {
         cancelLabel="Չեղարկել"
         variant="danger"
         isLoading={singleDeleting}
+      />
+
+      <CategoryFormModal
+        isOpen={addModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        onSuccess={fetchCategories}
+        mode="add"
+      />
+
+      <CategoryFormModal
+        isOpen={editCategory !== null}
+        onClose={() => setEditCategory(null)}
+        onSuccess={fetchCategories}
+        mode="edit"
+        editCategory={editCategory}
       />
     </div>
   )

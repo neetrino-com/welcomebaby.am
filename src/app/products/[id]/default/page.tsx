@@ -325,7 +325,7 @@ export default function DefaultProductPage({
               >
                 <ShoppingCart className="h-5 w-5" />
                 <span>
-                  {addedToCart ? '✓ Ավելացվել է զամբյուղում!' : 'Զամբյուղում ավելացնել'}
+                  {addedToCart ? '✓ Ավելացվել է զամբյուղում!' : 'Ավելացնել Զամբյուղ'}
                 </span>
               </button>
             </div>

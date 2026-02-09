@@ -8,13 +8,17 @@ import { Button } from '@/components/ui/button'
 import {
   Search,
   Eye,
+  Trash2,
   RefreshCw,
   ChevronRight,
   Clock,
   CheckCircle,
   ShoppingCart,
   DollarSign,
-  Calendar
+  Calendar,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react'
 import Pagination from '@/components/Pagination'
 import AdminTabs from '@/components/admin/Tabs'
@@ -107,6 +111,8 @@ export default function AdminOrdersPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false)
   const [bulkDeleting, setBulkDeleting] = useState(false)
+  const [orderToDelete, setOrderToDelete] = useState<string | null>(null)
+  const [singleDeleting, setSingleDeleting] = useState(false)
   const [stats, setStats] = useState({
     totalOrders: 0,
     pendingOrders: 0,
@@ -119,6 +125,7 @@ export default function AdminOrdersPage() {
     total: 0,
     pages: 0
   })
+  const [sortBy, setSortBy] = useState<'' | 'name_asc' | 'name_desc' | 'amount_asc' | 'amount_desc'>('')
 
   // Проверяем права доступа
   useEffect(() => {
@@ -147,6 +154,9 @@ export default function AdminOrdersPage() {
       }
       if (dateTo) {
         params.append('dateTo', new Date(dateTo).toISOString())
+      }
+      if (sortBy === 'name_asc' || sortBy === 'name_desc') {
+        params.append('sortBy', sortBy)
       }
 
       const response = await fetch(`/api/admin/orders?${params}`)
@@ -190,7 +200,7 @@ export default function AdminOrdersPage() {
 
   useEffect(() => {
     fetchOrders()
-  }, [currentPage, statusFilter, dateFrom, dateTo])
+  }, [currentPage, statusFilter, dateFrom, dateTo, sortBy])
 
   const handleBulkDelete = async () => {
     const ids = Array.from(selectedIds)
@@ -220,11 +230,34 @@ export default function AdminOrdersPage() {
     }
   }
 
+  const handleSingleDeleteConfirm = async () => {
+    if (!orderToDelete) return
+    setSingleDeleting(true)
+    try {
+      const response = await fetch('/api/admin/orders/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: [orderToDelete] })
+      })
+      const data = await response.json().catch(() => ({}))
+      if (response.ok) {
+        setOrderToDelete(null)
+        fetchOrders()
+      } else {
+        alert(data.error || 'Սխալ')
+      }
+    } catch (error) {
+      alert('Սխալ')
+    } finally {
+      setSingleDeleting(false)
+    }
+  }
+
   const toggleSelectAll = () => {
-    if (selectedIds.size === filteredOrders.length) {
+    if (selectedIds.size === displayedOrders.length) {
       setSelectedIds(new Set())
     } else {
-      setSelectedIds(new Set(filteredOrders.map((o) => o.id)))
+      setSelectedIds(new Set(displayedOrders.map((o) => o.id)))
     }
   }
 
@@ -281,6 +314,14 @@ export default function AdminOrdersPage() {
     )
   })
 
+  // Сортируем по сумме на клиенте (по имени сортирует API)
+  const displayedOrders =
+    sortBy === 'amount_asc'
+      ? [...filteredOrders].sort((a, b) => a.totalAmount - b.totalAmount)
+      : sortBy === 'amount_desc'
+        ? [...filteredOrders].sort((a, b) => b.totalAmount - a.totalAmount)
+        : filteredOrders
+
   if (status === 'loading' || loading) {
     return (
       <div className="flex items-center justify-center py-24">
@@ -292,8 +333,15 @@ export default function AdminOrdersPage() {
 
   if (!session || session.user.role !== 'ADMIN') return null
 
-  const allSelected = filteredOrders.length > 0 && selectedIds.size === filteredOrders.length
+  const allSelected = displayedOrders.length > 0 && selectedIds.size === displayedOrders.length
   const someSelected = selectedIds.size > 0
+
+  const cycleNameSort = () => {
+    setSortBy(s => (s === '' ? 'name_asc' : s === 'name_asc' ? 'name_desc' : ''))
+  }
+  const cycleAmountSort = () => {
+    setSortBy(s => (s === '' ? 'amount_asc' : s === 'amount_asc' ? 'amount_desc' : ''))
+  }
 
   return (
     <div>
@@ -448,10 +496,38 @@ export default function AdminOrdersPage() {
                   />
                 </th>
                 <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Պատվերի №</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase min-w-[140px]">Անուն</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase min-w-[140px]">
+                  <button
+                    type="button"
+                    onClick={cycleNameSort}
+                    className="inline-flex items-center gap-1 hover:text-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 rounded"
+                    title={sortBy === 'name_asc' ? 'Ա-Ֆ' : sortBy === 'name_desc' ? 'Ֆ-Ա' : 'Սորտավորել ըստ անուն'}
+                  >
+                    Անուն
+                    <span className="inline-flex flex-col leading-none text-[10px]">
+                      {sortBy === 'name_asc' && <ArrowUp className="h-3 w-3 text-primary-500" />}
+                      {sortBy === 'name_desc' && <ArrowDown className="h-3 w-3 text-primary-500" />}
+                      {sortBy !== 'name_asc' && sortBy !== 'name_desc' && <ArrowUpDown className="h-3 w-3 text-neutral-400" />}
+                    </span>
+                  </button>
+                </th>
                 <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Հեռախոս</th>
                 <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase min-w-[120px]">Հասցե</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Գումար</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">
+                  <button
+                    type="button"
+                    onClick={cycleAmountSort}
+                    className="inline-flex items-center gap-1 hover:text-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 rounded"
+                    title={sortBy === 'amount_asc' ? 'Աճում' : sortBy === 'amount_desc' ? 'Նվազում' : 'Սորտավորել ըստ գումար'}
+                  >
+                    Գումար
+                    <span className="inline-flex flex-col leading-none text-[10px]">
+                      {sortBy === 'amount_asc' && <ArrowUp className="h-3 w-3 text-primary-500" />}
+                      {sortBy === 'amount_desc' && <ArrowDown className="h-3 w-3 text-primary-500" />}
+                      {sortBy !== 'amount_asc' && sortBy !== 'amount_desc' && <ArrowUpDown className="h-3 w-3 text-neutral-400" />}
+                    </span>
+                  </button>
+                </th>
                 <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Ապրանքներ</th>
                 <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Ամսաթիվ</th>
                 <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Կարգավիճակ</th>
@@ -459,7 +535,7 @@ export default function AdminOrdersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-200">
-              {filteredOrders.length === 0 ? (
+              {displayedOrders.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="px-4 py-12 text-center text-neutral-500">
                     <ShoppingCart className="h-12 w-12 mx-auto mb-4 text-neutral-300" />
@@ -470,7 +546,7 @@ export default function AdminOrdersPage() {
                   </td>
                 </tr>
               ) : (
-                filteredOrders.map((order) => (
+                displayedOrders.map((order) => (
                   <tr key={order.id} className="hover:bg-neutral-50 transition-colors">
                     <td className="px-3 py-2">
                       <input
@@ -503,10 +579,24 @@ export default function AdminOrdersPage() {
                     </td>
                     <td className="px-3 py-2">
                       <div className="flex items-center justify-center gap-1">
-                        <Button onClick={() => openOrderDetails(order)} variant="outline" size="sm" className="gap-1">
+                        <button
+                          type="button"
+                          onClick={() => openOrderDetails(order)}
+                          className="p-2 text-neutral-600 hover:bg-neutral-100 rounded-lg"
+                          title="Մանրամասներ"
+                          aria-label="Մանրամասներ"
+                        >
                           <Eye className="h-4 w-4" />
-                          Մանրամասներ
-                        </Button>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setOrderToDelete(order.id)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                          title="Ջնջել"
+                          aria-label="Ջնջել"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -548,6 +638,18 @@ export default function AdminOrdersPage() {
           cancelLabel="Չեղարկել"
           variant="danger"
           isLoading={bulkDeleting}
+        />
+
+        <ConfirmModal
+          isOpen={orderToDelete !== null}
+          onClose={() => !singleDeleting && setOrderToDelete(null)}
+          onConfirm={handleSingleDeleteConfirm}
+          title="Ջնջել պատվերը"
+          message="Հեռացնել այս պատվերը։ Գործողությունը հնարավոր չէ հետարկել։"
+          confirmLabel="Ջնջել"
+          cancelLabel="Չեղարկել"
+          variant="danger"
+          isLoading={singleDeleting}
         />
       </div>
     </div>
