@@ -192,7 +192,7 @@ export default function ProfilePage() {
   }
 
   const getPaymentStatusInfo = (order: Order) => {
-    const isOnline = order.paymentMethod === 'idram' || order.paymentMethod === 'ameriabank'
+    const isOnline = order.paymentMethod === 'idram'
     const ps = order.paymentStatus ?? 'PENDING'
     if (!isOnline) {
       return { text: 'Սպասում ենք վճարման', color: 'text-amber-700', bg: 'bg-amber-100' }
@@ -316,7 +316,7 @@ export default function ProfilePage() {
                     {orders.map((order) => {
                       const isCashOrCard =
                         order.paymentMethod !== 'idram' &&
-                        order.paymentMethod !== 'ameriabank'
+                        order.paymentMethod !== 'idram'
                       const displayStatus =
                         isCashOrCard && order.status === 'PENDING'
                           ? 'CONFIRMED'

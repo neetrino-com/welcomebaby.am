@@ -87,7 +87,7 @@ export interface OrderFormData {
   phone: string
   address: string
   notes?: string
-  paymentMethod: 'idram' | 'arca' | 'ameriabank'
+  paymentMethod: 'idram' | 'cash' | 'card'
 }
 
 export interface ContactFormData {
@@ -116,9 +116,7 @@ export const PRODUCT_STATUS_LABELS: Record<ProductStatus, string> = {
 }
 
 export const PAYMENT_METHODS = {
-  idram: 'Idram',
-  arca: 'ArCa',
-  ameriabank: 'Ameriabank'
+  idram: 'Idram'
 } as const
 
 export type PaymentMethod = keyof typeof PAYMENT_METHODS

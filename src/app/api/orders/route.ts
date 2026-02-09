@@ -169,7 +169,7 @@ export async function POST(request: NextRequest) {
     }
 
     const paymentMethodVal = paymentMethod && typeof paymentMethod === 'string' ? paymentMethod : 'cash'
-    const isOnlinePayment = paymentMethodVal === 'idram' || paymentMethodVal === 'ameriabank'
+    const isOnlinePayment = paymentMethodVal === 'idram'
     const paymentStatus = isOnlinePayment ? 'PENDING' : null
     // Наличные/карта при получении — заказ сразу «принят», оплата потом; онлайн — PENDING до оплаты
     const orderStatus = isOnlinePayment ? 'PENDING' : 'CONFIRMED'

@@ -7,7 +7,7 @@ import { logger } from '@/lib/logger'
 /**
  * POST /api/orders/:orderId/mark-payment-failed
  * Помечает заказ как «оплата не прошла», когда пользователь вернулся с Idram/банка по FAIL_URL.
- * Только для заказов с онлайн-оплатой (idram, ameriabank) и текущим paymentStatus PENDING.
+ * Только для заказов с онлайн-оплатой (idram) и текущим paymentStatus PENDING.
  */
 export async function POST(
   request: NextRequest,
@@ -32,8 +32,7 @@ export async function POST(
       return NextResponse.json({ error: 'Order not found' }, { status: 404 })
     }
 
-    const isOnlinePayment =
-      order.paymentMethod === 'idram' || order.paymentMethod === 'ameriabank'
+    const isOnlinePayment = order.paymentMethod === 'idram'
     if (!isOnlinePayment) {
       return NextResponse.json(
         { error: 'Order is not an online payment order' },

@@ -202,9 +202,7 @@ export default function ProfileOrdersPage() {
           </p>
           <ul className="space-y-4">
             {items.map((order: OrderSummary) => {
-              const isOnlinePayment =
-                order.paymentMethod === 'idram' ||
-                order.paymentMethod === 'ameriabank'
+              const isOnlinePayment = order.paymentMethod === 'idram'
               const paymentStatus = order.paymentStatus ?? 'PENDING'
               const displayStatus =
                 !isOnlinePayment && order.status === 'PENDING'

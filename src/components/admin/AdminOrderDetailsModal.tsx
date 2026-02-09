@@ -52,8 +52,6 @@ const PAYMENT_LABELS: Record<string, string> = {
   cash: 'Կանխիկ',
   card: 'Քարտ',
   idram: 'Idram',
-  arca: 'ArCa',
-  ameriabank: 'Ameriabank',
 }
 
 const paymentStatusColors: Record<string, string> = {

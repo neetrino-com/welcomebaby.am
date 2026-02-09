@@ -76,8 +76,6 @@ const PAYMENT_LABELS: Record<string, string> = {
   cash: 'Կանխիկ',
   card: 'Քարտ',
   idram: 'Idram',
-  arca: 'ArCa',
-  ameriabank: 'Ameriabank',
 }
 
 interface OrderDetailsModalProps {
@@ -133,7 +131,7 @@ export default function OrderDetailsModal({
   }, [isOpen])
 
   const isOnlinePayment =
-    order?.paymentMethod === 'idram' || order?.paymentMethod === 'ameriabank'
+    order?.paymentMethod === 'idram'
   const paymentStatus = order?.paymentStatus ?? 'PENDING'
   const displayOrderStatus =
     order && !isOnlinePayment && order.status === 'PENDING' ? 'CONFIRMED' : order?.status
