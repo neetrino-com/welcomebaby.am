@@ -52,6 +52,8 @@ export async function GET(request: NextRequest) {
     const items: OrderSummary[] = orders.map((order) => ({
       id: order.id,
       status: order.status,
+      paymentStatus: order.paymentStatus ?? null,
+      paymentMethod: order.paymentMethod,
       total: order.total,
       createdAt: order.createdAt.toISOString(),
       itemCount: order.items.length,
@@ -166,17 +168,23 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Как в Bank-integration-shop: для онлайн-оплаты (idram, ameriabank) — paymentStatus PENDING до подтверждения
+    const paymentMethodVal = paymentMethod && typeof paymentMethod === 'string' ? paymentMethod : 'cash'
+    const paymentStatus =
+      paymentMethodVal === 'idram' || paymentMethodVal === 'ameriabank' ? 'PENDING' : null
+
     // Create order (supports both authenticated and guest users)
     const order = await prisma.order.create({
       data: {
         userId: session?.user?.id ?? null,
         name: (name && typeof name === 'string' && name.trim()) ? name.trim() : 'Guest Customer',
         status: 'PENDING',
+        paymentStatus,
         total,
         address: String(address).trim(),
         phone: String(phone).trim(),
         notes: notesVal,
-        paymentMethod: paymentMethod && typeof paymentMethod === 'string' ? paymentMethod : 'cash',
+        paymentMethod: paymentMethodVal,
         deliveryTime: deliveryTime && typeof deliveryTime === 'string' ? deliveryTime : null,
         deliveryTypeId: deliveryTypeIdVal,
         items: {

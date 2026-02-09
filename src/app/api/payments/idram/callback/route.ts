@@ -98,17 +98,19 @@ export async function POST(request: NextRequest) {
       return PLAIN_ERR('Invalid checksum', 400)
     }
 
-    if (order.paymentStatus === 'PAID') {
+    // Idempotency: already paid (SUCCESS — как в Bank-integration-shop; PAID — обратная совместимость)
+    if (order.paymentStatus === 'SUCCESS' || order.paymentStatus === 'PAID') {
       logger.debug('Idram confirm: already paid', { billNo })
       return PLAIN_OK()
     }
 
+    // Как в Bank-integration-shop: status CONFIRMED, paymentStatus SUCCESS, paymentId = EDP_TRANS_ID
     await prisma.order.update({
       where: { id: billNo },
       data: {
-        paymentStatus: 'PAID',
-        paymentId: transId,
         status: 'CONFIRMED',
+        paymentStatus: 'SUCCESS',
+        paymentId: transId,
         paymentData: { payerAccount, transDate, amount: paymentAmount },
       },
     })

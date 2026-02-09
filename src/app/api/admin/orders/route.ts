@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
     // Получаем параметры запроса
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
+    const paymentStatus = searchParams.get('paymentStatus')
     const dateFrom = searchParams.get('dateFrom')
     const dateTo = searchParams.get('dateTo')
     const page = parseInt(searchParams.get('page') || '1')
@@ -35,10 +36,17 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit
     const sortBy = searchParams.get('sortBy') || ''
 
-    // Строим фильтр
-    const whereClause: { status?: OrderStatus; createdAt?: { gte?: Date; lte?: Date } } = {}
+    // Строим фильтр (как в Bank-integration-shop: статус заказа + статус оплаты)
+    const whereClause: {
+      status?: OrderStatus
+      paymentStatus?: string | null
+      createdAt?: { gte?: Date; lte?: Date }
+    } = {}
     if (status) {
       whereClause.status = status as OrderStatus
+    }
+    if (paymentStatus) {
+      whereClause.paymentStatus = paymentStatus
     }
     if (dateFrom || dateTo) {
       whereClause.createdAt = {}

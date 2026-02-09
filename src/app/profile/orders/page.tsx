@@ -19,7 +19,7 @@ import type { OrderSummary, OrdersListResponse } from '@/types'
 
 const PAGE_SIZE = 10
 
-const STATUS_CONFIG: Record<
+const ORDER_STATUS_CONFIG: Record<
   string,
   { text: string; className: string; icon: typeof Clock }
 > = {
@@ -50,6 +50,23 @@ const STATUS_CONFIG: Record<
   },
   CANCELLED: {
     text: 'Չեղարկված',
+    className: 'bg-red-50 text-red-600 border-red-200',
+    icon: XCircle,
+  },
+}
+
+/** Для онлайн-оплаты при FAILED/PENDING показываем статус оплаты (как в Bank-integration-shop) */
+const PAYMENT_STATUS_CONFIG: Record<
+  string,
+  { text: string; className: string; icon: typeof Clock }
+> = {
+  PENDING: {
+    text: 'Սպասում է վճարման',
+    className: 'bg-amber-50 text-amber-700 border-amber-200',
+    icon: Clock,
+  },
+  FAILED: {
+    text: 'Վճարումը ձախողվել',
     className: 'bg-red-50 text-red-600 border-red-200',
     icon: XCircle,
   },
@@ -172,11 +189,25 @@ export default function ProfileOrdersPage() {
           </p>
           <ul className="space-y-4">
             {items.map((order: OrderSummary) => {
-              const config = STATUS_CONFIG[order.status] ?? {
-                text: order.status,
-                className: 'bg-neutral-100 text-neutral-600 border-neutral-200',
-                icon: Clock,
-              }
+              const isOnlinePayment =
+                order.paymentMethod === 'idram' ||
+                order.paymentMethod === 'ameriabank'
+              const paymentStatus = order.paymentStatus ?? 'PENDING'
+              const usePaymentLabel =
+                isOnlinePayment &&
+                (paymentStatus === 'FAILED' || paymentStatus === 'PENDING')
+              const config = usePaymentLabel
+                ? PAYMENT_STATUS_CONFIG[paymentStatus] ??
+                  ORDER_STATUS_CONFIG[order.status] ?? {
+                    text: order.status,
+                    className: 'bg-neutral-100 text-neutral-600 border-neutral-200',
+                    icon: Clock,
+                  }
+                : ORDER_STATUS_CONFIG[order.status] ?? {
+                    text: order.status,
+                    className: 'bg-neutral-100 text-neutral-600 border-neutral-200',
+                    icon: Clock,
+                  }
               const StatusIcon = config.icon
               return (
                 <li key={order.id}>

@@ -95,6 +95,26 @@ const ORDER_TABS = [
   { value: 'CANCELLED', label: 'Չեղարկված' }
 ]
 
+// Статус оплаты — отдельное поле (как в Bank-integration-shop)
+const paymentStatusColors: Record<string, string> = {
+  PENDING: 'bg-amber-100 text-amber-800',
+  SUCCESS: 'bg-green-100 text-green-800',
+  FAILED: 'bg-red-100 text-red-800',
+}
+
+const paymentStatusLabels: Record<string, string> = {
+  PENDING: 'Սպասում է վճարման',
+  SUCCESS: 'Վճարված',
+  FAILED: 'Վճարումը ձախողվել',
+}
+
+const PAYMENT_STATUS_TABS = [
+  { value: '', label: 'Բոլորը' },
+  { value: 'PENDING', label: 'Սպասում է վճարման' },
+  { value: 'SUCCESS', label: 'Վճարված' },
+  { value: 'FAILED', label: 'Ձախողվել' },
+]
+
 export default function AdminOrdersPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
@@ -103,6 +123,7 @@ export default function AdminOrdersPage() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState('')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
@@ -148,6 +169,9 @@ export default function AdminOrdersPage() {
       
       if (statusFilter) {
         params.append('status', statusFilter)
+      }
+      if (paymentStatusFilter) {
+        params.append('paymentStatus', paymentStatusFilter)
       }
       if (dateFrom) {
         params.append('dateFrom', new Date(dateFrom).toISOString())
@@ -200,7 +224,7 @@ export default function AdminOrdersPage() {
 
   useEffect(() => {
     fetchOrders()
-  }, [currentPage, statusFilter, dateFrom, dateTo, sortBy])
+  }, [currentPage, statusFilter, paymentStatusFilter, dateFrom, dateTo, sortBy])
 
   const handleBulkDelete = async () => {
     const ids = Array.from(selectedIds)
@@ -296,6 +320,32 @@ export default function AdminOrdersPage() {
       }
     } catch (error) {
       console.error('Error updating order status:', error)
+    }
+  }
+
+  const updateOrderPaymentStatus = async (orderId: string, newPaymentStatus: string) => {
+    try {
+      const response = await fetch(`/api/admin/orders/${orderId}/payment-status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentStatus: newPaymentStatus })
+      })
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        throw new Error(data.error || 'Failed to update payment status')
+      }
+      const updated = await response.json()
+      setOrders(prevOrders =>
+        prevOrders.map(order =>
+          order.id === orderId ? { ...order, paymentStatus: updated.paymentStatus } : order
+        )
+      )
+      if (selectedOrder && selectedOrder.id === orderId) {
+        setSelectedOrder(prev => prev ? { ...prev, paymentStatus: updated.paymentStatus } : null)
+      }
+    } catch (error) {
+      console.error('Error updating payment status:', error)
+      alert(error instanceof Error ? error.message : 'Սխալ')
     }
   }
 
@@ -454,6 +504,12 @@ export default function AdminOrdersPage() {
         tabs={ORDER_TABS}
         activeValue={statusFilter}
         onChange={(v) => { setStatusFilter(v); setCurrentPage(1); setSelectedIds(new Set()) }}
+        className="mb-2"
+      />
+      <AdminTabs
+        tabs={PAYMENT_STATUS_TABS}
+        activeValue={paymentStatusFilter}
+        onChange={(v) => { setPaymentStatusFilter(v); setCurrentPage(1); setSelectedIds(new Set()) }}
         className="mb-4"
       />
 
@@ -531,13 +587,14 @@ export default function AdminOrdersPage() {
                 <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Ապրանքներ</th>
                 <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Ամսաթիվ</th>
                 <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase">Կարգավիճակ</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-600 uppercase min-w-[140px]">Վճարման կարգավիճակ</th>
                 <th className="px-3 py-2 text-center text-xs font-semibold text-neutral-600 uppercase">Գործողություններ</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-200">
               {displayedOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-12 text-center text-neutral-500">
+                  <td colSpan={11} className="px-4 py-12 text-center text-neutral-500">
                     <ShoppingCart className="h-12 w-12 mx-auto mb-4 text-neutral-300" />
                     <p className="text-lg">Պատվերներ չեն գտնվել</p>
                     <p className="text-sm mt-2">
@@ -573,6 +630,21 @@ export default function AdminOrdersPage() {
                         className={`px-2 py-1 rounded-lg border-0 text-xs font-medium cursor-pointer ${statusColors[order.status] || 'bg-neutral-100 text-neutral-700'}`}
                       >
                         {ORDER_TABS.filter((t) => t.value).map((t) => (
+                          <option key={t.value} value={t.value}>{t.label}</option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-3 py-2">
+                      <select
+                        value={order.paymentStatus ?? ''}
+                        onChange={(e) => {
+                          const v = e.target.value
+                          if (v) updateOrderPaymentStatus(order.id, v)
+                        }}
+                        className={`px-2 py-1 rounded-lg border-0 text-xs font-medium cursor-pointer ${paymentStatusColors[order.paymentStatus ?? ''] || 'bg-neutral-100 text-neutral-600'}`}
+                      >
+                        <option value="">—</option>
+                        {PAYMENT_STATUS_TABS.filter((t) => t.value).map((t) => (
                           <option key={t.value} value={t.value}>{t.label}</option>
                         ))}
                       </select>
@@ -625,6 +697,7 @@ export default function AdminOrdersPage() {
             onClose={closeModal}
             order={selectedOrder}
             onStatusUpdate={updateOrderStatus}
+            onPaymentStatusUpdate={updateOrderPaymentStatus}
           />
         )}
 

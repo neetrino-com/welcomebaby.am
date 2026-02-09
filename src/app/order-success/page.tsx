@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useEffect, useState, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { CheckCircle, Clock, Phone, ArrowRight, XCircle } from 'lucide-react'
@@ -11,11 +11,21 @@ function OrderSuccessContent() {
   const searchParams = useSearchParams()
   const { clearCart } = useCart()
   const [cartCleared, setCartCleared] = useState(false)
+  const markFailedSent = useRef(false)
 
   const error = searchParams.get('error')
   const orderId = searchParams.get('orderId') ?? searchParams.get('EDP_BILL_NO') ?? ''
   const clearCartParam = searchParams.get('clearCart')
   const hasError = !!error
+
+  // При возврате с Idram по FAIL_URL помечаем заказ как «оплата не прошла» (как в Bank-integration-shop)
+  useEffect(() => {
+    if (!hasError || !orderId || markFailedSent.current) return
+    markFailedSent.current = true
+    fetch(`/api/orders/${encodeURIComponent(orderId)}/mark-payment-failed`, {
+      method: 'POST',
+    }).catch(() => {})
+  }, [hasError, orderId])
 
   useEffect(() => {
     if (!hasError && clearCartParam === 'true' && !cartCleared) {

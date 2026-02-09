@@ -6,7 +6,7 @@ import { formatPrice } from '@/utils/priceUtils'
 import type { OrderDetails } from '@/types'
 import BaseModal from '@/components/ui/BaseModal'
 
-const STATUS_CONFIG: Record<
+const ORDER_STATUS_CONFIG: Record<
   string,
   { text: string; className: string; icon: typeof Clock }
 > = {
@@ -37,6 +37,22 @@ const STATUS_CONFIG: Record<
   },
   CANCELLED: {
     text: 'Չեղարկված',
+    className: 'bg-red-50 text-red-600 border-red-200',
+    icon: XCircle,
+  },
+}
+
+const PAYMENT_STATUS_LABELS: Record<
+  string,
+  { text: string; className: string; icon: typeof Clock }
+> = {
+  PENDING: {
+    text: 'Սպասում է վճարման',
+    className: 'bg-amber-50 text-amber-700 border-amber-200',
+    icon: Clock,
+  },
+  FAILED: {
+    text: 'Վճարումը ձախողվել',
     className: 'bg-red-50 text-red-600 border-red-200',
     icon: XCircle,
   },
@@ -102,12 +118,26 @@ export default function OrderDetailsModal({
     }
   }, [isOpen])
 
+  const isOnlinePayment =
+    order?.paymentMethod === 'idram' || order?.paymentMethod === 'ameriabank'
+  const paymentStatus = order?.paymentStatus ?? 'PENDING'
+  const usePaymentLabel =
+    order &&
+    isOnlinePayment &&
+    (paymentStatus === 'FAILED' || paymentStatus === 'PENDING')
   const statusCfg = order
-    ? STATUS_CONFIG[order.status] ?? {
-        text: order.status,
-        className: 'bg-neutral-100 text-neutral-600 border-neutral-200',
-        icon: Clock,
-      }
+    ? usePaymentLabel
+      ? PAYMENT_STATUS_LABELS[paymentStatus] ??
+        ORDER_STATUS_CONFIG[order.status] ?? {
+          text: order.status,
+          className: 'bg-neutral-100 text-neutral-600 border-neutral-200',
+          icon: Clock,
+        }
+      : ORDER_STATUS_CONFIG[order.status] ?? {
+          text: order.status,
+          className: 'bg-neutral-100 text-neutral-600 border-neutral-200',
+          icon: Clock,
+        }
     : null
   const StatusIcon = statusCfg?.icon ?? Clock
 
