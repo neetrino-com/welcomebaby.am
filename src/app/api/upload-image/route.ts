@@ -6,11 +6,17 @@ import { logger } from '@/lib/logger'
 
 export async function POST(request: NextRequest) {
   try {
-    const blobToken = process.env.welcomebaby_READ_WRITE_TOKEN || process.env.WELCOMEBABY_READ_WRITE_TOKEN || process.env.BLOB_READ_WRITE_TOKEN
-    if (!blobToken) {
-      logger.error('Upload image: welcomebaby_READ_WRITE_TOKEN is not configured')
+    const hasS3Config =
+      !!process.env.S3_ENDPOINT &&
+      !!process.env.S3_ACCESS_KEY &&
+      !!process.env.S3_SECRET_KEY &&
+      !!process.env.S3_BUCKET &&
+      !!process.env.S3_PUBLIC_URL
+
+    if (!hasS3Config) {
+      logger.error('Upload image: S3/R2 storage is not configured')
       return NextResponse.json(
-        { error: 'Blob storage not configured. Add welcomebaby_READ_WRITE_TOKEN in Vercel Environment Variables.' },
+        { error: 'S3/R2 storage not configured. Add S3_* variables in environment.' },
         { status: 503 }
       )
     }
@@ -74,13 +80,13 @@ export async function POST(request: NextRequest) {
     const randomString = Math.random().toString(36).substring(2, 8)
     const fileName = `images/${timestamp}-${randomString}.${extension}`
 
-    // Загружаем файл в Vercel Blob Storage
+    // Загружаем файл в Cloudflare R2 (S3‑совместимое хранилище)
     const { url, path } = await uploadFile(file, fileName)
 
     // Возвращаем URL файла
-    // url - полный URL от Blob (https://...public.blob.vercel-storage.com/...)
-    // path - относительный путь (/images/...)
-    // Используем url как основной, так как это полный URL для работы с Blob
+    // url - полный публичный URL (например, https://<endpoint>/<bucket>/images/...)
+    // path - относительный путь/ключ внутри bucket'а (images/...)
+    // Используем url как основной для отображения
     return NextResponse.json({
       success: true,
       path: path || url, // Для обратной совместимости
@@ -91,9 +97,9 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'
     logger.error('Upload image error', error)
-    const isConfigError = message.includes('BLOB_READ_WRITE_TOKEN') || message.includes('не настроен')
+    const isConfigError = message.includes('S3/R2 storage not configured')
     return NextResponse.json(
-      { error: isConfigError ? 'Blob storage not configured. Add BLOB_READ_WRITE_TOKEN in Vercel.' : 'Failed to upload image' },
+      { error: isConfigError ? 'S3/R2 storage not configured. Add S3_* variables in environment.' : 'Failed to upload image' },
       { status: isConfigError ? 503 : 500 }
     )
   }
