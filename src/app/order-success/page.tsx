@@ -46,15 +46,14 @@ function OrderSuccessContent() {
     if (!hasError && typeof window !== 'undefined') window.sessionStorage.removeItem('idram_pending_order_id')
   }, [hasError])
 
-  // Очищаем корзину: при успехе с clearCart=true (наличные/карта или возврат с Idram success) или при возврате с Idram fail (error + orderId)
+  // Очищаем корзину только при успешном заказе: наличные/карта (редирект без error) или возврат с Idram по SUCCESS_URL (clearCart=true, без error). При fail/pending не очищаем.
   useEffect(() => {
     if (cartCleared) return
-    const shouldClear = (!hasError && clearCartParam === 'true') || (hasError && !!orderId)
-    if (shouldClear) {
+    if (!hasError && clearCartParam === 'true') {
       clearCart()
       setCartCleared(true)
     }
-  }, [hasError, clearCartParam, orderId, cartCleared, clearCart])
+  }, [hasError, clearCartParam, cartCleared, clearCart])
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#ffffff' }}>
