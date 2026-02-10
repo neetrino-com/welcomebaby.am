@@ -21,10 +21,11 @@ export function isValidImagePath(imagePath: string | null | undefined): boolean 
     return validExtensions.some(ext => imagePath.toLowerCase().endsWith(ext));
   }
   
-  // Разрешаем полные URL от Vercel Blob Storage
-  if (imagePath.startsWith('https://') && imagePath.includes('public.blob.vercel-storage.com')) {
+  // Разрешаем полные HTTPS‑URL (R2/S3, CDN и т.п.)
+  if (imagePath.startsWith('https://')) {
     const validExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.avif', '.gif'];
-    return validExtensions.some(ext => imagePath.toLowerCase().endsWith(ext));
+    const lower = imagePath.toLowerCase().split('?')[0];
+    return validExtensions.some(ext => lower.endsWith(ext));
   }
   
   return false;

@@ -1,5 +1,28 @@
 import type { NextConfig } from "next";
 
+// Разбираем S3_PUBLIC_URL или S3_ENDPOINT, чтобы разрешить домен R2 для изображений
+const s3PublicUrl = process.env.S3_PUBLIC_URL || process.env.S3_ENDPOINT
+let r2RemotePattern:
+  | {
+      protocol: 'http' | 'https'
+      hostname: string
+      pathname: string
+    }
+  | undefined
+
+if (s3PublicUrl) {
+  try {
+    const url = new URL(s3PublicUrl)
+    r2RemotePattern = {
+      protocol: url.protocol === 'http:' ? 'http' : 'https',
+      hostname: url.hostname,
+      pathname: '/**',
+    }
+  } catch {
+    // некорректный URL — просто пропускаем, чтобы не ломать билд
+  }
+}
+
 const nextConfig: NextConfig = {
   eslint: {
     // Отключаем ESLint во время сборки для продакшена
@@ -21,7 +44,7 @@ const nextConfig: NextConfig = {
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     unoptimized: false, // Включаем оптимизатор обратно после исправления конфига
-    // Разрешаем локальные изображения и Vercel Blob Storage
+    // Разрешаем локальные изображения, Cloudflare R2 (через S3_PUBLIC_URL/S3_ENDPOINT) и Vercel Blob Storage (для обратной совместимости)
     remotePatterns: [
       {
         protocol: 'https',
@@ -33,6 +56,7 @@ const nextConfig: NextConfig = {
         hostname: '*.public.blob.vercel-storage.com',
         pathname: '/**',
       },
+      ...(r2RemotePattern ? [r2RemotePattern] : []),
       {
         protocol: 'http',
         hostname: 'localhost',
