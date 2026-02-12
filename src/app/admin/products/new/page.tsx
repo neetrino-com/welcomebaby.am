@@ -34,7 +34,8 @@ export default function NewProductPage() {
     images: [] as string[],  // Дополнительные изображения
     ingredients: '',
     isAvailable: true,
-    status: ''
+    status: '',
+    stock: '0'
   })
   
   const [loading, setLoading] = useState(false)
@@ -95,7 +96,8 @@ export default function NewProductPage() {
         price: parseFloat(formData.price),
         salePrice: formData.salePrice ? parseFloat(formData.salePrice) : null,
         ingredients: formData.ingredients || '',
-        images: JSON.stringify(formData.images)  // Сохраняем как JSON строку
+        images: JSON.stringify(formData.images),
+        stock: Math.max(0, parseInt(formData.stock, 10) || 0)
       }
 
       const response = await fetch('/api/admin/products', {
@@ -242,6 +244,20 @@ export default function NewProductPage() {
                       </option>
                     ))}
                   </select>
+                </div>
+
+                {/* Количество в наличии */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Количество в наличии (шт.)
+                  </label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={formData.stock}
+                    onChange={(e) => handleInputChange('stock', e.target.value)}
+                    placeholder="0"
+                  />
                 </div>
 
                 {/* Статус */}

@@ -42,7 +42,8 @@ export default function EditProductPage({ params }: EditProductPageProps) {
     images: [] as string[],  // Дополнительные изображения
     ingredients: '',
     isAvailable: true,
-    status: ''
+    status: '',
+    stock: '0'
   })
   
   const [loading, setLoading] = useState(true)
@@ -114,7 +115,8 @@ export default function EditProductPage({ params }: EditProductPageProps) {
           images: imagesArray,
           ingredients: productData.ingredients || '',
           isAvailable: productData.isAvailable ?? true,
-          status: productData.status === 'REGULAR' ? '' : (productData.status || '')
+          status: productData.status === 'REGULAR' ? '' : (productData.status || ''),
+          stock: productData.stock != null ? String(productData.stock) : '0'
         })
       } catch (error) {
         console.error('Error fetching product:', error)
@@ -163,7 +165,8 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         price: parseFloat(formData.price),
         salePrice: formData.salePrice ? parseFloat(formData.salePrice) : null,
         ingredients: formData.ingredients || '',
-        images: JSON.stringify(formData.images)  // Сохраняем как JSON строку
+        images: JSON.stringify(formData.images),
+        stock: Math.max(0, parseInt(formData.stock, 10) || 0)
       }
 
       const response = await fetch(`/api/admin/products/${productId}`, {
@@ -364,6 +367,20 @@ export default function EditProductPage({ params }: EditProductPageProps) {
                       </option>
                     ))}
                   </select>
+                </div>
+
+                {/* Количество в наличии */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Մատակարարում (հատ)
+                  </label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={formData.stock}
+                    onChange={(e) => handleInputChange('stock', e.target.value)}
+                    placeholder="0"
+                  />
                 </div>
 
                 {/* Статус */}
