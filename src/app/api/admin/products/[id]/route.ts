@@ -95,9 +95,7 @@ export async function PUT(
 
     // Получаем данные из запроса
     const body = await request.json()
-    const { name, description, price, salePrice, categoryId, image, images, ingredients, isAvailable, status, published } = body
-    
-    console.log('Update product data:', { id, name, description, price, salePrice, categoryId, image, images, ingredients, isAvailable, status })
+    const { name, description, price, salePrice, categoryId, image, images, ingredients, isAvailable, status, published, stock } = body
 
     // Проверяем существование товара
     const existingProduct = await prisma.product.findUnique({
@@ -175,7 +173,8 @@ export async function PUT(
         ...(ingredients && { ingredients }),
         ...(isAvailable !== undefined && { isAvailable }),
         ...(status !== undefined && { status: status || 'REGULAR' }),
-        ...(published !== undefined && { published: !!published })
+        ...(published !== undefined && { published: !!published }),
+        ...(stock !== undefined && { stock: Math.max(0, typeof stock === 'number' ? stock : parseInt(stock, 10) || 0) })
       },
       include: {
         category: {

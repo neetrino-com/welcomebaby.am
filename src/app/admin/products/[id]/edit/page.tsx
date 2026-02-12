@@ -42,7 +42,8 @@ export default function EditProductPage({ params }: EditProductPageProps) {
     images: [] as string[],  // Дополнительные изображения
     ingredients: '',
     isAvailable: true,
-    status: ''
+    status: '',
+    stock: '0'
   })
   
   const [loading, setLoading] = useState(true)
@@ -114,7 +115,8 @@ export default function EditProductPage({ params }: EditProductPageProps) {
           images: imagesArray,
           ingredients: productData.ingredients || '',
           isAvailable: productData.isAvailable ?? true,
-          status: productData.status === 'REGULAR' ? '' : (productData.status || '')
+          status: productData.status === 'REGULAR' ? '' : (productData.status || ''),
+          stock: productData.stock != null ? String(productData.stock) : '0'
         })
       } catch (error) {
         console.error('Error fetching product:', error)
@@ -163,7 +165,8 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         price: parseFloat(formData.price),
         salePrice: formData.salePrice ? parseFloat(formData.salePrice) : null,
         ingredients: formData.ingredients || '',
-        images: JSON.stringify(formData.images)  // Сохраняем как JSON строку
+        images: JSON.stringify(formData.images),
+        stock: Math.max(0, parseInt(formData.stock, 10) || 0)
       }
 
       const response = await fetch(`/api/admin/products/${productId}`, {
@@ -343,6 +346,24 @@ export default function EditProductPage({ params }: EditProductPageProps) {
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     Թողեք դատարկ, եթե զեղչ չկա
+                  </p>
+                </div>
+
+                {/* Количество на складе — видимое поле */}
+                <div className="md:col-span-2 rounded-lg border border-amber-200 bg-amber-50/50 p-4">
+                  <label className="block text-sm font-medium text-gray-800 mb-2">
+                    Количество на складе (шт) / Պահեստում (հատ)
+                  </label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={formData.stock}
+                    onChange={(e) => handleInputChange('stock', e.target.value)}
+                    placeholder="0"
+                    className="max-w-[200px] bg-white border-amber-300"
+                  />
+                  <p className="text-xs text-gray-600 mt-1">
+                    Сколько единиц товара в наличии (0 = нет в наличии)
                   </p>
                 </div>
 
