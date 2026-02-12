@@ -237,7 +237,7 @@ export default function AdminOrderDetailsModal({
                       <p className="font-medium text-sm text-neutral-900">{item.product.name}</p>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-xs text-neutral-600">
-                          {item.product.price.toLocaleString()} ֏
+                          {item.price.toLocaleString()} ֏
                         </span>
                         <span className="text-neutral-400">×</span>
                         <span className="bg-orange-100 text-orange-800 px-2 py-0.5 rounded text-xs font-medium">
@@ -248,10 +248,10 @@ export default function AdminOrderDetailsModal({
                   </div>
                   <div className="text-right">
                     <p className="font-semibold text-sm text-neutral-900">
-                      {(item.product.price * item.quantity).toLocaleString()} ֏
+                      {(item.price * item.quantity).toLocaleString()} ֏
                     </p>
                     <p className="text-xs text-neutral-500">
-                      {item.quantity} × {item.product.price.toLocaleString()} ֏
+                      {item.quantity} × {item.price.toLocaleString()} ֏
                     </p>
                   </div>
                 </div>

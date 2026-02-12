@@ -95,10 +95,10 @@ export async function GET(request: NextRequest) {
       prisma.order.count({ where: whereClause })
     ])
 
-    // Вычисляем общую сумму для каждого заказа
+    // Сумма заказа — по цене на момент заказа (item.price), т.е. со скидкой, если была
     const ordersWithTotal = orders.map(order => ({
       ...order,
-      totalAmount: order.items.reduce((sum: number, item) => sum + (item.product.price * item.quantity), 0)
+      totalAmount: order.items.reduce((sum: number, item) => sum + item.price * item.quantity, 0)
     }))
 
     return NextResponse.json({
