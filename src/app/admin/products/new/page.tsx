@@ -226,6 +226,24 @@ export default function NewProductPage() {
                   </p>
                 </div>
 
+                {/* Количество на складе — видимое поле */}
+                <div className="md:col-span-2 rounded-lg border border-amber-200 bg-amber-50/50 p-4">
+                  <label className="block text-sm font-medium text-gray-800 mb-2">
+                    Количество на складе (шт) / Պահեստում (հատ)
+                  </label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={formData.stock}
+                    onChange={(e) => handleInputChange('stock', e.target.value)}
+                    placeholder="0"
+                    className="max-w-[200px] bg-white border-amber-300"
+                  />
+                  <p className="text-xs text-gray-600 mt-1">
+                    Сколько единиц товара в наличии (0 = нет в наличии)
+                  </p>
+                </div>
+
                 {/* Категория */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -244,20 +262,6 @@ export default function NewProductPage() {
                       </option>
                     ))}
                   </select>
-                </div>
-
-                {/* Количество в наличии */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Количество в наличии (шт.)
-                  </label>
-                  <Input
-                    type="number"
-                    min="0"
-                    value={formData.stock}
-                    onChange={(e) => handleInputChange('stock', e.target.value)}
-                    placeholder="0"
-                  />
                 </div>
 
                 {/* Статус */}
